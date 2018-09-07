@@ -1,0 +1,58 @@
+\section{Introduction}
+	Video games in general and gambling in particular require fast interaction between players. Yet, most blockchain systems fail to offer high-speed block generation and the average transaction timing is too long. For instance, Ethereum generates a new block approximately every 15 seconds [https://ian.pw/posts/2017-
+12-08-why-eos-will-overtake-ethereum-in-high-performance-smart-contracts.html], while each transaction on average takes 6 minutes [https://www.abitgreedy.com/transactionspeed/#
+transaction-speed]. Obviously, this is too slow for convenient gaming. Moreover, transaction fees required in most cases drive overall session costs further up.
+
+
+	Layer 2 solutions are designed to remedy for the situation [https://medium.com/l4-media/making-sense-of-ethereumslayer-
+2-scaling-solutions-state-channels-plasma-and-truebit-22cb40dcc2f4]. These operate "on top" of existing blockchains. One of these solutions is \textit{state channels}. In this paper we would like to cover DAO.Casino's state channels focusing on gambling implementation options.
+
+
+		\subsection {State Channels overview}
+	Incorporating instant zero-fee settlements between the two channel parties transportable to blockchain available in payment channels[], state channels introduce generalized extended functionality to them. 
+	A State Channel operates as follows [https://www.jecoleman]:
+	\begin{enumerate}
+		\item Part of the blockchain state is locked via smart contract, so that a specific set of participants must completely agree with each other to update it. This state is called the \textit {state deposit}.
+		\item Participants update the state amongst themselves by constructing and signing transactions that could be submitted to the blockchain.
+		\item Finally, participants submit the state back to the blockchain, which closes the state channel.
+	\end{enumerate}
+
+	In ideal scenario blockchain participants interact with the channel twice: channel opening and authorized closure with initial state updated.
+
+	Should participants disagree over result, the channel state is called a \textit {dispute}; smart-contract then acts as an arbitrator in the \textit {dispute resolution} process.
+
+		\subsection {Requirements for state channels}
+	Before going into further details and particularities of state channels, we have to define basic security requirements. [statechannels] specify the following two:
+	\begin{itemize}
+		\item Trustlessness - parties who entrust state to properly initialized state channel should not significantly increase the risk of that state being manipulated. 
+		\item Finality - state-channel-operations have the same degree of finality and irreversibility as the analogous operation performed directly on the chain itself.
+	\end{itemize}
+	Additional security and computational requirements come from the gambling industry:
+	\begin{itemize}
+		\item Minimize the communication complexity in state channels.
+		\item Provable fair random number generation support.
+		\item Minimize the time requried for this generation.
+		\item Instant verification of randomly generated numbers.
+		\item Once either party makes a bet, one of the parties has to pay the debt to the other in the end. 
+	\end{itemize}
+
+	As long as the above requirements are met, fair and convenient gambling is available to all the parties involved.
+
+		\subsection {Related works} 
+	Payment channels [spankchain, stk] are similar to state channels, but a state deposit stores only participant balances. Payment channels networks are built from multiple separate channels that can be coupled when needed. Most popular implementations of the approach are The Lightning Network for Bitcoin and The Raiden Network for Ethereum. Given that payment channels store no game data, using them in the industry is unfavorable. 
+
+	State channels were first described in detail by Jeff Coleman in [https://www.jecoleman.ca/statechannels/] and were later considered in other works [https://github.com/aeternity/tocol/blob/master/channels/README.md, https://allquantor.at/blockchainbib/pdf/miller2017sprites.https://arxiv.org/pdf/1807.11378.pdf]. Generalized State Channels defined in [statechannels] represent another step forward enabling users to install new functionality into an existing channel without touching the blockchain. A similar idea was independently developed and implemented in Perun[]. To make state channels more trustworthy, McCorry \textit {et al}. [https://www.cs.cornell.edu/ iddo/ pisa.pdf] defined tools preventing execution fork attacks. However, all these works considered general state channel application issues without focusing on the needs of the gambling industry.
+
+	FunFair[] offers a proprietary implementation of state channels called Fate Channels. In particular, it includes a provable fair random numbers generation based on the commit-reveal pattern. Magmo[] developed a framework supporting multiplayer channels. Acebuster designed  state channels tailored to poker [acebusters yellow paper]. It is noteworthy, that all state channel implementations (by Magmo, Fun Fair or DAO.Casino) have limitations in terms of supported game types.
+
+		\subsection {Our contribution}
+	For the purposes of this paper, all games meeting the following conditions shall be defined as simple pvp-games:
+	\begin{itemize}
+		\item Two parties only (e.g. a casino vs. a player);
+		\item The game logic may require random number generation;
+		\item When either party makes a move, a certain end state can be traced to choose the winner and/or distribute funds among participants.
+	\end{itemize}
+	We offer a \textit {Game Channel} technology that allows launching blockchain-based simple pvp-games without fees for additional transactions and with zero delays between moves/rounds. Our solution meets the above-mentioned requirements to state channels. Game channels implementation for Ethereum is available at [].
+
+	Game channels is an instant of state channels tailored to the needs of the gambling industry. Signidice[]
+algorithm is used for provable fair random number generation within a game channel. Signidice generates random numbers from a unique digital signature of one player and a random seed of the other player. In section 3 we provide detailed coverage of the "asymmetric" game channel protocol involving a casino and an ordinary player. Note that this "asymmetry" can be avoided to allow two players to gamble against one another. Section 4 covers this and other available modifications
