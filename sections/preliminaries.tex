@@ -4,3 +4,174 @@ In this section, we introduce definitions and notations that will be used throug
 We denote the set of integers modulo an integer $n$ by $\mathbb{Z}_n$. When writing $x \xleftarrow{\text{R}} S$ we mean that x is chosen uniformly at random from the set $S$. By $H$ denote some cryptographic hash function. 
 
 The communication model considered a point-to-point channels between two parties. One of them may be malicious adversary. The adversary can divert from the specified protocol in any way. 
+
+	\subsection{Safety and liveness of game channels}
+
+Liveness of game channels assures a granted result for each channel participants within a round. Round results in the channel can be saved on-chain any time,  with a submission window of sufficient size left to avoid miner attacks. Thus, a gamechannel relies on blockchain liveness. Simply put,  the exact state sent by the channel participants must always be lock in the blockchain. It is assumed that the state is accepted and signed by all channel participants. Given the above, it is important that all participants have stable Internet connections free of significant interruptions. 
+
+Safety of game channels also relies on the safety of blockchain. It assures that all game channel participants obtain a valid and identical result. Analyzing intra-channel activities, we can suggest a case when a participant does not respond to messages sent to him via the channel. There is no telling whether an actual network failure occurred or a participant deliberately gives no response. As far as state channels are concerned, the participant availability issue is expected to be resolved through implementing some procedure for obtaining a valid result even when one of the participants is unavailable. In game channels the relevant functions are integrated into the smart-contract responsible for dispute resolution and is authorized to decide over reward distribution in compliance with the game logic. Note that a new round can only be started after all the parties agreed upon the previous one. Thus, in worst case one player will be in the n+1 state, the other in the n state. And, as long as the first player fails to send a state update, the dispute is resolved in favor of the second player with maximum reward going to their account.
+
+It is noteworthy that an incorrect implementation of game channels and software errors can cause one or all players to entirely lose their deposits. However this issue is out of the scope of the present work..
+
+	\subsection{Signatures and Fingerprints}
+\begin{defn}
+A signature scheme $ \Sigma $ is a tuple $(M, S, K, KeyGen, Sign, Verify)$ where:
+	\begin{itemize}
+		\item $ M $ is a finite field of possible messages;
+		\item $ S $ is a finite field of possible signatures;
+		\item $ K $ is a finite field of possible keys;
+		\item $ KeyGen: (1^k) \rightarrow (sk, pk) $. This algorithm takes as input a security parameter $k$ and outputs secret and public keys;
+		\item $Sign: (m, sk) \rightarrow \sigma $. The signing algorithm that takes as input a message $m \in M$ and secret key $sk \in K$, and outputs a signature $\sigma \in S$;
+	\item $Verify: (m, \sigma, pk) \rightarrow \{0, 1\} $. This algorithm check whether the signature $\sigma \in S$ for a message $m \in M$ and a public key $pk \in K$ is valid.
+	\end{itemize}
+\end{defn}
+In addition define the uniqueness property for a signature scheme. 
+\begin{defn}
+A signature scheme $ \Sigma $ is called $unique$ if for every message $m \in M$ and for every public key $pk \in K$ is only one valid signature $\sigma \in S$.
+\end{defn}
+
+In our protocols we use two types of signature schemes: RSA[] and ECDSA[]. ECDSA is a standard signature for transaction acknowledgement within the channel. RSA is reserved for pseudorandom number generation in Signidice algorithm.
+
+\begin{remark}
+RSA can be replaced by any other signature with the propertie of uniqueness. We suggest considering BLS [] as the first choice alternative.
+\end{remark}
+
+When a channel is open, the smart contract only stores \textit {Merkle-tree fingerprint} not the entire RSA public key. The purpose is to reduce channel opening transaction cost.
+
+\begin{defn}
+Let $pk = (N, e)$ be a RSA public key. Then $f = H(H(e), H(N))$ is a Merkle-tree fingerprint of the RSA public key $pk$. 
+\end{defn}
+\begin{remark}
+In DAO.Casino implementation $KECCAK-256$[] is always used for $H$ function to ensure compatibility with Ethereum. 
+\end{remark}
+
+	\subsection{Signidice}
+
+Signidice[] - is a protocol that allows pseudorandom number generation by two parties. 
+
+Define protocol participants as: $P$ - player, $D$ - dealer. Define the bit hash length as $hash.size$, and the maximum and the minimum numbers the generation can yield as $max$ and $ min$ respectively.
+
+\begin{algorithm} 
+%\floatname{algorithm}{Signidice} %
+\caption*{$\textbf{Signidice}$} \label{alg:signidice}
+\begin{algorithmic}
+\State 1. $ P \ \text{send}\  seed\xleftarrow{\text{R}} \{0,1\}^* \  \ \text{to} \ D$
+\State 2. D compute:
+\State $\ \ \ \ h \gets H(seed)$
+\State $\ \ \ \ S \gets  \Sigma . Sign(h)$
+\State $\ \ \ \ L \gets H(S) $
+\State $\ \ \ \ range \gets max - min +1$
+\While {$L \geq \left\lfloor 2^{hash.size}-1 / (range)\right\rfloor \cdot (range) $}
+\State$ L \gets H(L)$
+\EndWhile
+\State $ \ \ \ \  L \gets (L \bmod range) + min $
+\State 3. $D \ \text{send}\  S, \ L \ \   \text{to} \ P$
+\State 4. P check results:
+\If {$ \Sigma .Verify(S) \ \text{and} \  L \ \text{is correct}$}  
+\State The number L accepted
+\Else 
+\State The number L not accepted
+\EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\begin{remark}
+If  $max -  min$  results in a power of two, while-loop at step 2 of Signidice algorithm can be omitted. But if it doesn’t, the resulting distribution is not uniform as some numbers may be more likely than others.
+\end{remark}
+
+In DAO.Casino implementation RSA unique signature is represented by $Sign$ and $Verify$ functions:
+\begin{itemize}
+	\item $RSA.Sign(m): \mathbb{Z}_n \rightarrow \mathbb{Z}_n: m \rightarrow m^d mod N$
+	\item $RSA.Verify(m, s): \mathbb{Z}_n \times \mathbb{Z}_n \rightarrow \{True, False\}: (m, s) \rightarrow \text{check if } \\ s^e mod N == m $
+\end{itemize}
+
+	\subsection{Channels}
+As stated above, State Channel operation requires an on-chain smart-contract. Let’s define the core functionalities required to enable this contract:
+\begin{itemize}
+	\item $ OpenChannel $ - Defines the parties’ consent to interact within the channel;
+	\item $ UpdateChannel $ - Changes the last state stored in blockchain to the newest state approved by both parties;
+	\item $ CloseChannel $ - Completion of the channel operation. The latest state approved by both channel parties is loaded to the blockchain; funds are distributed according to it;
+	\item $ OpenDispute $ - Game break and dispute initiation when one of participants fails to get reliable relevant data. A dispute has two potential outcomes specified below;
+	\item $ ConsensusResolve $ - Parties resolved dispute by consent about new state;
+	\item $ ArbitrationResolve $ - Dispute resolved through smart contract arbitrage.
+\end{itemize}
+
+\begin{remark}
+Note that these functionalities may be implemented within a single contract or within several interacting contracts.
+\end{remark}
+
+Now we introduce the following concept. 
+\begin{defn}
+The set $ (OpenChannel, UpdateChannel, CloseChannel,\\ OpenDispute,  ConsensusResolve, ArbitrationResolve) $
+is called \textit {Game Channels Contract System} and is denoted by \textit {GCCS}. 
+\end{defn}
+
+\begin{remark}
+GCCS can also be extended by additional functionality, but these addons are out of the scope of the issue considered in the present work. 
+\end{remark}
+
+\begin{defn}
+We say that a connection between two parties is called a \textit {Сhannel} if the following conditions holds:
+	\begin{enumerate}
+		\item Every sent message contains some game-related data;
+		\item Every sent message (or main part of this message) signed by sender;
+		\item This connection verified by GCCS. 
+	\end{enumerate}
+\end{defn}
+
+Each channel has a $state$. The channel state is the last message sent by a participant that unambiguously defines the latest game state and/or participants balance. Note that each protocol participant must store the latest channel state. 
+
+Also each channel has the  $livetime$ parameter. $Livetime$ defines the number of blockchain blocks available to GCCS to update the channel state and open disputes related to this state. 
+
+There are two participant roles: $ Player $ and $Dealer$. The table below defines core functionality differences between these roles:
+\begin{center}
+\begin{tabular}{ |c|c| } 
+ \hline
+ \textbf{Player} & \textbf{Dealer} \\ 
+ \hline
+ Makes bets & Recieves bets \\ 
+ Generates PRNG seed & Generates pseudorandom numbers \\ 
+ Checks game results & Calculates game results\\
+ \hline
+\end{tabular}
+\end{center}
+Other differences depend on specific protocol implementation.
+
+To coordinate different actions within the channel, GCCS must be able to recognize action approvals from both parties. If a channel state signed by the player and by the dealer is received, GCCS considers that participants reached consensus. And note that the sender does not matter in this case. To reduce transaction costs, receiving one signature may suffice if the transaction itself is sent by the other party (i.e. approval is confirmed by sending).  
+
+\textit {Channel Status} is a global variable defining the current channel status; the following statuses exist:
+\begin{itemize}
+	\item $Unused$ - channel not open yet;
+	\item $Open$ - channel open, game in progress;
+	\item $Close$ - channel was used and closed now;
+	\item $Dispute$ - channel open, dispute in progress.
+\end{itemize}
+
+The chart below illustrates the channel life-cycle from status to status.
+\\
+\\
+\begin{center}
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=45mm,
+  thick,main node/.style={circle,fill=white!20,draw,
+  font=\sffamily\Large\bfseries,minimum size=27mm}]
+
+  \node[main node] (unused) {Unused};
+  \node[main node] (open) [right of=unused] {Open};
+  \node[main node] (close) [right of=open] {Close};
+  \node[main node] (dispute) [below of=open] {Dispute};
+
+
+  \path[every node/.style={font=\sffamily\small,
+      fill=white,inner sep=1pt}]
+    (unused) edge [bend left=60] node[above=1mm] {OpenChannel} (open)
+    (open) edge [bend left=60] node[above=1mm] {CloseChannel} (close)
+    (open) edge [bend right=30] node[left=1mm] {OpenDispute} (dispute)
+    (dispute) edge [bend right=30] node[right=1mm] {ConsensusResolve} (open)
+    (dispute) edge [bend right=45] node[below=1mm] {ArbitrationResolve} (close);
+\end{tikzpicture}
+\end{center}
+
+The dispute state is the same regardless of the underlying case. After recording this state, the channel can either go back to open or close depending on parties' actions. The channel goes back to open, if parties are able to agree upon a new state. If the dispute is resolved through smart-contract arbitrage, the channel moves to the close state.
+
+Now we can say that a $ Game \ Channel $ is a channel $\gamma$ such that Player and Dealer use protocols described in this paper. 
+
