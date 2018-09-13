@@ -13,7 +13,7 @@ Safety of game channels also relies on the safety of blockchain. It assures that
 
 \textit {Griefing} is the ability of a participant to deviate from the protocol in order to disrupt participant interaction without directly violating the protocol security.[] There are two griefing strategies. One implies forcing a party into paying the channel closure transaction; to do it, a party that was supposed to close the channel does not send the transaction to blockchain. It is not a major issue, as state deposits considerably exceed transaction costs, and participants are likely to assume this risk. The other strategy implies posting expired channel states during a dispute if an attacking party believes that the other participant is unavailable. To eliminate this risk, a game channel checks the game round number when there is a state change attempt in a dispute; if the difference between the round number of the new state and the round number suggested by an attacker exceeds 1, the attacker loses their deposit.
 
-It is noteworthy that an incorrect implementation of game channels and software errors can cause one or all players to entirely lose their deposits. However this issue is out of the scope of the present work..
+It is noteworthy that an incorrect implementation of game channels and software errors can cause one or all players to entirely lose their deposits. However this issue is out of the scope of the present work.
 
 	\subsection{Signatures and Fingerprints}
 \begin{defn}
@@ -35,7 +35,7 @@ A signature scheme $ \Sigma $ is called $unique$ if for every message $m \in M$ 
 In our protocols we use two types of signature schemes: RSA[] and ECDSA[]. ECDSA is a standard signature for transaction acknowledgement within the channel. RSA is reserved for pseudorandom number generation in Signidice algorithm.
 
 \begin{remark}
-RSA can be replaced by any other signature with the propertie of uniqueness. We suggest considering BLS [] as the first choice alternative.
+RSA can be replaced by any other signature with the property of uniqueness. We suggest considering BLS [] as the first choice alternative.
 \end{remark}
 
 When a channel is open, the smart contract only stores \textit {Merkle-tree fingerprint} not the entire RSA public key. The purpose is to reduce channel opening transaction cost.
