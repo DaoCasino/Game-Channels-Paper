@@ -51,14 +51,14 @@ In DAO.Casino implementation $KECCAK-256$[] is always used for $H$ function to e
 
 Signidice[] - is a protocol that allows pseudorandom number generation by two parties. 
 
-Define protocol participants as: $P$ - player, $D$ - dealer. Define the bit hash length as $hash.size$, and the maximum and the minimum numbers the generation can yield as $max$ and $ min$ respectively.
+Define the bit hash length as $hash.size$, and the maximum and the minimum numbers the generation can yield as $max$ and $ min$ respectively.
 
 \begin{algorithm} 
 %\floatname{algorithm}{Signidice} %
 \caption*{$\textbf{Signidice}$} \label{alg:signidice}
 \begin{algorithmic}
-\State 1. $ P \ \text{send}\  seed\xleftarrow{\text{R}} \{0,1\}^* \  \ \text{to} \ D$
-\State 2. D compute:
+\State 1. $ Alice \ \text{send}\  seed\xleftarrow{\text{R}} \{0,1\}^* \  \ \text{to} \ Bob$
+\State 2. Bob compute:
 \State $\ \ \ \ h \gets H(seed)$
 \State $\ \ \ \ S \gets  \Sigma . Sign(h)$
 \State $\ \ \ \ L \gets H(S) $
@@ -67,8 +67,8 @@ Define protocol participants as: $P$ - player, $D$ - dealer. Define the bit hash
 \State$ L \gets H(L)$
 \EndWhile
 \State $ \ \ \ \  L \gets (L \bmod range) + min $
-\State 3. $D \ \text{send}\  S, \ L \ \   \text{to} \ P$
-\State 4. P check results:
+\State 3. $Bob \ \text{send}\  S, \ L \ \   \text{to} \ Alice$
+\State 4. Alice check results:
 \If {$ \Sigma .Verify(S) \ \text{and} \  L \ \text{is correct}$}  
 \State The number L accepted
 \Else 
@@ -125,7 +125,7 @@ Each channel has a $state$. The channel state is the last message sent by a part
 
 Also each channel has the  $livetime$ parameter. $Livetime$ defines the number of blockchain blocks available to GCCS to update the channel state and open disputes related to this state. 
 
-There are two participant roles: $ Player $ and $Dealer$. The table below defines core functionality differences between these roles:
+Define channel participants as: $ Player $ and $Dealer$. The table below defines core functionality differences between these roles:
 \begin{center}
 \begin{tabular}{ |c|c| } 
  \hline

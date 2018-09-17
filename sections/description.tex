@@ -1,1 +1,162 @@
-\section{Game Channels}
+\section{Game Channels} \label{gamechannel}
+In this section we are going to give a detailed coverage of protocols that allow two parties to open a game channel, play a game, close the channel and get rewards facing no risk of counterparty fraud. Also, we are going to consider the dispute resolution mechanism.
+
+\begin{table}[h]
+
+\caption{The names of variables and their meanings}
+% \rowcolors{1}{lightgray}{white}
+\begin{tabular}{|l|c|l|}
+\hline
+Name&Type&Descriprion\\
+\hline
+channelId & bytes32 & Unique channel identifier\\ 
+
+playerAddress & address & Player's ethereum-address\\            
+dealerAddress & address & Dealer's ethereum-address\\  
+gameContractAddress & address & Ethereum-address of the game\\             
+playerBalance & uint256 & Player's deposit value\\                   
+dealerBalance & uint256 & Dealer's deposit value\\                   
+timestamp & uint256 &  Information identifying when a message sent\\                  
+RSAfingerprint & bytes32 &  Merkle-tree fingerprint of the RSA public key\\  
+gameData & bytes & Game process data\\
+round & uint256 & Round number of the game session \\
+bet & uint256 & Player's bet \\
+seed & bytes32 & Random seed for PRNG\\
+totalBet & uint256 & Total amount of  player bets \\
+flag & bool &Closing flag \\
+maxGame, minGame & uint256 & Boundaries of random numbers in the game\\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection {Opening a channel}
+Player initiates the channel open event. To open a channel, its participants have to agree upon a specific initial state and confirm it with their signatures. Then the transaction with a state and participant signatures is sent to the smart-contract that verifies data validity. The smart-contract calculates a unique channel ID generated according to the following formula:
+$channelId = H(playerAddress,  dealerAddress, timestamp)$. Note that either participant may send the opening transaction. For simplicity, let’s assume that it is sent by Dealer. The message exchange sequence is specified in the  \autoref {alg:openchannel} protocol.
+
+\begin{algorithm}
+\floatname{algorithm}{Protocol}
+\caption{Opening a channel} \label{alg:openchannel}
+\begin{enumerate}
+	\item Player sends message containing amount of tokens for Player's deposit to Dealer.
+\begin{center}
+	 $initial\_message\ = (playerAddress, playerBalance, dealerAddress,$\\$ gameContractAddress)$
+\end{center}
+	\item Dealer generates the public RSA key $RSA\_public\_key= (N,e)$ and calculates the $RSAfingerprint$. Then, Dealer generates the following messages:
+\begin{center}
+	 $open\_message = (playerAddress,  dealerAddress, playerBalance, dealerBalance,$\\$timestamp, gameData, RSAfingerprint, gameContractAddress)$
+	$dealer\_signed\_message = ECDSA.Sign(open\_message)$
+\end{center}
+	\item Dealer sends the following data to Player:
+\begin{center}
+$(RSA\_public\_key, open\_message,dealer\_signed\_message)$
+\end{center}
+	\item Player receives the message, checks data in it and then signs the $open\_message$ and sends it back to Dealer.
+\begin{center}
+	$player\_signed\_message = ECDSA.Sign(open\_message)$
+\end{center}
+	\item If the $player\_signed\_message$ is valid, Dealer calls the $openChannel$ smart contract function with the following data:
+\begin{center}
+$(open\_message,dealer\_signed\_message,player\_signed\_message)$
+\end{center}
+\begin{lstlisting}
+    function openChannel(
+        playerAddress,
+        dealerAddress,
+        playerBalance,
+        dealerBalance,
+        timestamp,
+        gameData,
+        RSAfingerprint,
+        gameContractAddress,
+        player_signed_message,
+        dealer_signed_message
+    )
+\end{lstlisting}
+\end{enumerate}
+\end{algorithm}
+\begin{algorithm}
+\begin{enumerate}
+\setcounter{enumi}{5}
+\item The contract verifies validity of the received data. If valid, it is assumed that the both parties approved channel opening. Then the contract generates $channelId$ and freezes funds of the both parties for the game. The channel status changes to $Open$. 
+\end{enumerate}
+\end{algorithm}
+
+\theoremstyle{definition}
+\newtheorem{exmp}{Example}[section]
+\begin{exmp}
+Let’s assume that Bob runs a casino. Alice wants to use Bob’s service to play roulette available in the list of games. First Alice allows the game contract to transfer100 of Alice's tokens to later use them as a deposit. Then she sends the following message to Bob:
+\\
+\\
+\begin{tabular}{ccc}
+   	\begin{tabular}{c}
+   	Alice:\\
+	$0xde8456...$\\
+   	\end{tabular} &
+   \begin{tabular}{l}
+   $\underrightarrow{\quad (0xde8456..., 100,
+ 0x87ff5a...) \quad}$
+   \end{tabular}&
+  	 \begin{tabular}{c}
+ 	 Bob:\\
+	$0x87ff5a...$\\
+   	\end{tabular} \\
+\end{tabular}\\
+
+Bob analyzes the message and agrees to carry out a game. Bob allows the game contract to transfer 5000 of Bob's tokens to later use them as a deposit. Then he responds to Alice:
+\\
+\\
+\begin{tabular}{ccc}
+   	\begin{tabular}{c}
+   	Alice:\\
+	$0xde8456...$\\
+   	\end{tabular} &
+   \begin{tabular}{c}
+   $\underleftarrow{\quad (0xde8456...,  100, 0x87ff5a..., \quad $ \\  $ \quad 5000,  gameData,  timestamp,\quad $ \\  $ \quad RSAfingerprint, Bob\_signature ) \quad}$
+   \end{tabular}&
+  	 \begin{tabular}{cl}
+ 	 Bob:\\
+	$0x87ff5a...$\\
+   	\end{tabular} \\
+\end{tabular}\\
+\\
+
+Alice checks the Bob’s message and, making sure it is valid, signs it on her part and sends back.
+\\\
+\\
+\begin{tabular}{ccc}
+   	\begin{tabular}{c}
+   	Alice:\\
+	$0xde8456...$\\
+   	\end{tabular} &
+   \begin{tabular}{c}
+   $\underrightarrow{\quad (channelId,0xde8456...,  100, 0x87ff5a..., \quad $ \\  $ \quad 5000,  gameData,  timestamp,\quad $ \\  $ \quad RSAfingerprint, Alice\_signature ) \quad}$
+   \end{tabular}&
+  	 \begin{tabular}{cl}
+ 	 Bob:\\
+	$0x87ff5a...$\\
+   	\end{tabular} \\
+\end{tabular}\\
+\\
+
+Checking Alice’s signature for validity, Bob sends both their signatures to the contract alongside the data about the channel.\\
+\begin{tabular}{ccc}
+   	\begin{tabular}{c}
+ 	 Bob:\\
+	$0x87ff5a...$\\
+   	\end{tabular} &
+   \begin{tabular}{c}
+   $\underrightarrow{\quad (channelId,0xde8456...,  100, 0x87ff5a..., \quad $ \\  $ \quad 5000,  gameData,  timestamp,\quad $ \\  $ \quad RSAfingerprint, Bob\_signature, \quad $ \\  $ \quad Alice\_signature ) \quad}$
+   \end{tabular}&
+  	 \begin{tabular}{cl}
+ 	 Contract:\\
+	$0x8a4654...$\\
+   	\end{tabular} \\
+\end{tabular}\\
+\\
+
+The smart contract checks validity of the both signatures and the balances of the participants. Then the contract locks the parties' deposits. From this moment the channel is open.
+\end{exmp}
+
+\subsection {Interaction within the channel}
+
+
