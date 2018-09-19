@@ -37,11 +37,11 @@ maxNumber, minNumber & uint256 & Boundaries of random numbers in the game\\
 \begin{enumerate}
 	\item Игрок отправляет дилеру сообщение о том, что он готов сыграть на некоторую сумму токенов, которая есть в наличии на его кошельке.
 \begin{center}
-	 $open\_message\_player = (playerAddress, playerBalance, dealerAddress,$\\$ channelId,gameContractAddress)$
+	 $open\_message\_player = (playerAddress, playerBalance, dealerAddress,$\\$ gameContractAddress)$
 \end{center}
 	\item Дилер генерирует модуль и публичный ключ RSA $RSA\_public\_key= (N,e)$ и вычисляет $RSAfingerprint$. Затем он формирует сообщение для открытия канала:
 \begin{center}
-	 $open\_message = (channelId, playerAddress,  playerBalance, dealerAddress,$\\$dealerBalance, gameData, openingBlock, RSAfingerprint,$\\$gameContractAddress)$
+	 $open\_message = (playerAddress,  playerBalance, dealerAddress,$\\$dealerBalance, gameData, openingBlock, RSAfingerprint,$\\$gameContractAddress)$
 	$dealer\_signed\_message = ECDSA.Sign(open\_message)$
 \end{center}
 	\item Дилер отправляет игроку данные:
@@ -64,7 +64,6 @@ $(open\_message,dealer\_signed\_message,player\_signed\_message)$
 \item Контракт проверяет полученные подписи на валидность. Если они верные, то таким образом определено согласие обеих сторон на открытие канала. Затем контракт замораживает средства обоих участников для игры и изменяет статус канала на $Open$. 
 \begin{lstlisting}
     function openChannel(
-        channelId
         playerAddress,
         dealerAddress,
         playerBalance,
@@ -167,7 +166,7 @@ $(open\_message,dealer\_signed\_message,player\_signed\_message)$
 \begin{enumerate}
 	\item Игрок генерирует $seed$  и  формирует сообщения:
 \begin{center}
-$ seed\_message = (channelId, bet, round, gameData, seed, gameContractAddress)$
+$ seed\_message = (channelId, bet, round, gameData, seed)$
 $signed\_seed\_message = ECDSA.Sign(seed\_message)$ 
 \end{center}
  и посылает его дилеру. 
@@ -183,15 +182,24 @@ $signed\_seed\_message = ECDSA.Sign(seed\_message)$
 \State $L = (S_{hash}$ mod $gameRange) + minNumber$
  \end{algorithmic}
  Применяя игровую логику к полученного числу, дилер просчитывает результат раунда.
+\item Дилер подписывает новое состояние канала
+\begin{center}
+
+$update\_channel\_message = H(channelId, playerBalance, dealerBalance, round)$
+$signed\_message = ECDSA.Sign(update\_channel\_message)$
+
+\end{center}
 \item Далее он отправляет сообщение
 \begin{center}
- $message = (L,S, round, gameData, playerBalance, dealerBalance)$
+
+$message = (L,S, round, gameData, playerBalance, dealerBalance, signed\_message)$
+
 \end{center}
  игроку.
 	\item Игрок проверяет, что число L, результаты игры и новый баланс участников рассчитаны верно.
-	\item Игрок пересылает ему $message$ вместе со своей подписью. 
+	\item Игрок пересылает ему $update\_channel\_message$ вместе со своей подписью. 
 \begin{center}
- $signed\_message = ECDSA.Sign(message)$
+ $signed\_message = ECDSA.Sign(update\_channel\_message)$
 \end{center}
 \end{enumerate}
 \end{algorithm}
