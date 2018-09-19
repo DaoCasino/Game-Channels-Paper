@@ -1,0 +1,56 @@
+\documentclass[tikz, 12pt]{article}
+
+\usepackage[margin=1.5in]{geometry}
+\usepackage[table]{xcolor}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{caption}
+\usepackage{amssymb}
+\captionsetup{justification=raggedright,singlelinecheck=false,format=hang}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc} 
+\usepackage{blindtext}
+\usepackage{listings}
+\usepackage{blindtext}
+\usepackage{amsthm}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{lipsum}
+\renewcommand{\labelenumii}{\theenumii}
+\renewcommand{\theenumii}{\theenumi.\arabic{enumii}.}
+\usetikzlibrary{positioning,fit,calc,arrows}
+\tikzset{block/.style={draw,thick,text width=2cm,minimum height=1cm,align=center},
+         line/.style={-latex}
+}
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}
+\theoremstyle{remark}
+\newtheorem*{remark}{Remark}
+\title {Gamechannel}
+\author {Alisa Chernyaeva \and Ilia Shirobokov \thanks{DaoCasino team}}
+\date {August 2018}
+\hyphenation{every-where}
+\begin{document}
+\maketitle
+	\begin{abstract}
+Одно из решений для масштабирования блокчейн-проектов - технология Statechannels, которая уменьшает объем транзакций и ускоряет время обмена ими в блокчейне.
+Мы разработали свой вариант реализации State Channels и назвали его Game Channels. Это специализированное решение для гемблинга, оно позволяет играть двум участникам, а также участвовать третьему в качестве доверенной стороны. 
+Технология Game Channels обладает большим потенциалом, т.к. ее можно использовать для других игр, не ограничиваясь только азартными.
+	\end{abstract}
+\tableofcontents	
+	\input{sections/Introduction}
+	\input{sections/preliminaries}
+		\input{sections/description}
+
+\input{sections/modifications}
+	\begin{thebibliography}{9}
+\bibitem{sF90}
+Ran Canetti, \emph{Universally Composable Security: A New Paradigm for Cryptographic Protocols}, Boston University and Tel Aviv University, July 16, 2013.
+\end{thebibliography}
+
+
+		
+
+\end{document}

@@ -1,0 +1,172 @@
+\section{Preliminaries}
+In this section, we introduce definitions and notations that will be used throughout the paper.
+
+We denote the set of integers modulo an integer $n$ by $\mathbb{Z}_n$. When writing $x \xleftarrow{\text{R}} S$ we mean that x is chosen uniformly at random from the set $S$. By $H$ denote some cryptographic hash function. 
+
+The communication model considered a point-to-point channels between two parties. One of them may be malicious adversary. The adversary can divert from the specified protocol in any way. 
+	\subsection{Safety and liveness of gamechannel}
+
+ Liveness of gamechannel представляет собой гарантированное получение результата для всех участников канала в раунде. Исходы раундов в канале мы можем в любой момент сохранить в onchain, оставляя submission window достаточного размера, чтобы избежать атаки майнера.  Таким образом gamechannel полагается на Liveness of blockchain. Проще говоря, необходимо, чтобы у нас всегда в  blockchain фиксировалось то самое состояние, которое было отправлено одним из участников канала. Предполагаем, что это состояние было принято и подписано всеми участниками канала. Также это налагает требования для участников не иметь длительных разрывов с подключением к Интернету. 
+
+
+Safety of gamechannel также опирается на Safety of blockchain. Это дает нам гарантированный valid и идентичный для всех участников gamechannel результат.
+Рассматривая действия внутри канала, мы можем прийти к ситуации, когда один из участников не отвечает на посланные ему сообщения в канале. Мы не можем с уверенностью сказать, действительно ли произошли неполадки в сети, или участник намеренно не отвечает. В state channels проблема Participant Availability предполагает некоторый механизм получения valid результата даже при недоступности одного из участников. В случае Game Channels за это отвечает набор функций смарт-контракта, который проводит dispute resolution и имеет возможность принимать решения относительно распределения наград в соответствии с логикой игры. Заметим, что новый раунд можно начать только тогда, когда все стороны согласовали предыдущий. Таким образом, в худшем случае на руках у одного из участников будет состояние n+1, а у другого n. Если первый участник не предоставит обновленное состояние, то dispute будет решен в пользу второго участника с присуждением максимального выигрыша.
+
+Griefing is the ability of a participant отклоняться от протокола с целью дезорганизовать взаимодействие между участниками без прямого нарушения безопасности протокола.[]Существуют две стратегии Griefing.  В первом случае возможно навязывание оплаты транзакции на закрытие канала, когда участник, который должен был закрыть канал, не отправляет транзакцию в блокчейн. Это не является существенной проблемой, т.к. state deposits достаточно превосходит стоимость транзакции, и участники могут согласиться на этот риск. Второй стратегией является постинг старых состояний канала в диспуте, когда attacker считает, что второй участник недоступен. Gamechannel при попытке обновления состояния в диспуте проверяет номер раунда игры, и если он отличается строго больше чем на 1, то attacker теряет свой депозит.
+
+
+Отметим, что неправильная реализация Game Channels и ошибки в программном коде могут привести к полной потере депозита для всех или одного из участников. Однако этот вопрос выходит за рамки данной статьи.
+	\subsection{Signatures and Fingerprints}
+\begin{defn}
+A signature scheme $ \Sigma $ is a tuple $(M, S, K, KeyGen, Sign, Verify)$ where:
+	\begin{itemize}
+		\item $ M $ is a finite field of possible messages;
+		\item $ S $ is a finite field of possible signatures;
+		\item $ K $ is a finite field of possible keys;
+		\item $ KeyGen: (1^k) \rightarrow (sk, pk) $. This algorithm takes as input a security parameter $k$ and outputs secret and public keys;
+		\item $Sign: (m, sk) \rightarrow \sigma $. The signing algorithm that takes as input a message $m \in M$ and secret key $sk \in K$, and outputs a signature $\sigma \in S$;
+	\item $Verify: (m, \sigma, pk) \rightarrow \{0, 1\} $. This algorithm check whether the signature $\sigma \in S$ for a message $m \in M$ and a public key $pk \in K$ is valid.
+	\end{itemize}
+\end{defn}
+In addition define the uniqueness property for a signature scheme. 
+\begin{defn}
+A signature scheme $ \Sigma $ is called $unique$ if for every message $m \in M$ and for every public key $pk \in K$ is only one valid signature $\sigma \in S$.
+\end{defn}
+
+In our protocols we use two types of signature schemes: RSA[] and ECDSA[]. ECDSA signatures uses как стандартная подпись для подтверждения транзакций внутри канала. RSA используется для генерации псевдослучайных чисел в алгоритме Signidice. 
+
+\begin{remark}
+Вместо RSA можно использовать любую другую подпись со свойством uniqueness. Как основную альтернативу RSA мы предлагаем рассмотреть BLS[].
+\end{remark}
+
+При открытии канала, смарт-контракт вместо публичного ключа RSA сохраняет только его $ Merkle-tree \ fingerprint$. Это делается для того, чтобы уменьшить стоимость транзакции для открытия канала. 
+\begin{defn}
+Let $pk = (N, e)$ be a RSA public key. Then $f = H(H(e), H(N))$ is a Merkle-tree fingerprint of the RSA public key $pk$. 
+\end{defn}
+\begin{remark}
+В реализации DAO.Casino для совместимости с Ethereum всегда в качестве функции $H$ используется $KECCAK-256$[]. 
+\end{remark}
+	\subsection{Signidice}
+	Signidice[] - это протокол, позволяющий двум сторонам совместно сгенерировать псевдослучайное число. 
+
+Определим участников протокола: $P\ -$ игрок, $D \ -$ дилер. Битовую длину хэша обозначим как  $hash.size$, а наибольшее и наименьшее случайное число, которые могут получиться в результате генерации, как $max$ и $ min$ соотвественно.
+
+\begin{algorithm} 
+%\floatname{algorithm}{Signidice} %
+\caption*{$\textbf{Signidice}$} \label{alg:signidice}
+\begin{algorithmic}
+\State 1. $ P \ \text{send}\  seed\xleftarrow{\text{R}} \{0,1\}^* \  \ \text{to} \ D$
+\State 2. D compute:
+\State $\ \ \ \ h \gets H(seed)$
+\State $\ \ \ \ S \gets  \Sigma . Sign(h)$
+\State $\ \ \ \ L \gets H(S) $
+\State $\ \ \ \ range \gets max - min +1$
+\While {$L \geq \left\lfloor 2^{hash.size}-1 / (range)\right\rfloor \cdot (range) $}
+\State$ L \gets H(L)$
+\EndWhile
+\State $ \ \ \ \  L \gets (L \bmod range) + min $
+\State 3. $D \ \text{send}\  S, \ L \ \   \text{to} \ P$
+\State 4. P check results:
+\If {$ \Sigma .Verify(S) \ \text{and} \  L \ \text{is correct}$}  
+\State Случайное число принято
+\Else 
+\State Случайное число не принято
+\EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\begin{remark}
+If  $max -  min$  results in a power of two, while-loop на шаге 2 алгоритма Signidice можно убрать. But if it doesn’t, the resulting distribution is not uniform as some numbers may be more likely than others.
+\end{remark}
+
+В реализации DAO.Casino уникальная подпись RSA представлена функциями $Sign$ and $Verify$:
+\begin{itemize}
+	\item $RSA.Sign(m): \mathbb{Z}_n \rightarrow \mathbb{Z}_n: m \rightarrow m^d mod N$
+	\item $RSA.Verify(m, s): \mathbb{Z}_n \times \mathbb{Z}_n \rightarrow \{True, False\}: (m, s) \rightarrow \text{check if } \\ s^e mod N == m $
+\end{itemize}
+	\subsection{Channels}
+Как было упомянуто ранее, для работы State Channel необходим смарт-контракт на блокчейне. Определим основные functionalities, необходимые для работы этого контракта:
+\begin{itemize}
+	\item $ OpenChannel $ - Определение согласия участников взаимодействовать друг с другом внутри канала;
+	\item $ UpdateChannel $ - Изменение состояния, хранящегося в блокчейне, на последнее согласованное участниками в канале состояние;
+	\item $ CloseChannel $ - Завершение работы канала. В блокчейн загружается последнее одобренное обеими сторонами состояние, и на основе его происходит распределение средств;
+	\item $ OpenDispute $ - Остановка игры и инициирование диспута в той ситуации, где один из участников не получает достоверных актуальных данных. У него могут быть два варианта завершения, описанных ниже;
+	\item $ ConsensusResolve $ - Разрешение спора между участниками по договоренности;
+	\item $ ArbitrationResolve $ - Разрешение спора между участниками через арбитраж смарт-контракта. 
+\end{itemize}
+\begin{remark}
+Заметим, что эти functionalities могут принадлежать как к одному контракту, так и являться несколькими различными контрактами, взаимодействующими между собой.
+\end{remark}
+Now we introduce the following concept. 
+\begin{defn}
+The set $ (OpenChannel, UpdateChannel, CloseChannel,\\ OpenDispute,  ConsensusResolve, ArbitrationResolve) $
+is called \textit {Game Channels Contract System} and is denoted by \textit {GCCS}. 
+\begin{remark}
+GCCS может также быть расширен дополнительным функционалом, таким как proxy-контракт и прочее, но это выходит за рамки вопроса, рассматриваемого в данной статье. 
+\end{remark}
+\end{defn}
+\begin{defn}
+We say that a connection between two parties is called a \textit {Сhannel} if the following conditions holds:
+	\begin{enumerate}
+		\item Every sent message contains some game-related data;
+		\item Every sent message (or main part of this message) signed by sender;
+		\item This connection verified by GCCS. 
+	\end{enumerate}
+\end{defn}
+
+Каждый канал имеет $state$. Состоянием канала является последнее сообщение, отправленное одним из участником, и однозначно определяющее последнее состояние игры и баланс участников канала. Отметим, что хранить последнее состояние канала обязан каждый из участников протокола. 
+
+Также каждый канал имеет параметр $livetime$. $Livetime$ определяет количество блоков в блокчейне, в течение которого GCCS позволяет обновлять состояние канала и открывать споры по поводу этого состояния. 
+
+Выделим две роли участников канала: $ Player $ и $Dealer$. В таблице ниже указаны их основные различия по функционалу:
+\begin{center}
+\begin{tabular}{ |c|c| } 
+ \hline
+ \textbf{Player} & \textbf{Dealer} \\ 
+ \hline
+ Делает ставки & Принимает ставки \\ 
+ Генерирует seed для PRNG & Генерирует случайные числа \\ 
+ Проверяет результаты игры & Рассчитывает результаты игры\\
+ \hline
+\end{tabular}
+\end{center}
+Остальные различия будут зависеть от конкретной реализации протокола. 
+
+
+Для согласования различных действий в канале GCCS должна уметь определять подтверждение действия обеими сторонами. GCCS считает, что консенсус между участниками был достигнут, если получает некоторое состояние канала и две его подписи: от игрока и от дилера. При этом не важно, кто отправил транзакцию с этими данными. Для снижения стоимости транзакции, можно принимать подпись только одного участника, если сама транзакция отправлена вторым участником (т.о. он подтверждает свое согласие через отправку транзакции). 
+
+$Channel \ Status$ является глобальной характеристикой текущей ситуации в канале и бывает следующих видов:
+\begin{itemize}
+	\item $Unused$ - канал с заданным id не был еще открыт;
+	\item $Open$ - канал открыт в данный момент и в нем происходит игра;
+	\item $Close$ - канал был использован и закрыт;
+	\item $Dispute$ - канал открыт в данный момент и в нем происходит диспут.
+\end{itemize}
+
+Переход между этими статусами отображен на диаграмме ниже.
+\\
+\\
+\begin{center}
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=45mm,
+  thick,main node/.style={circle,fill=white!20,draw,
+  font=\sffamily\Large\bfseries,minimum size=27mm}]
+
+  \node[main node] (unused) {Unused};
+  \node[main node] (open) [right of=unused] {Open};
+  \node[main node] (close) [right of=open] {Close};
+  \node[main node] (dispute) [below of=open] {Dispute};
+
+
+  \path[every node/.style={font=\sffamily\small,
+      fill=white,inner sep=1pt}]
+    (unused) edge [bend left=60] node[above=1mm] {OpenChannel} (open)
+    (open) edge [bend left=60] node[above=1mm] {CloseChannel} (close)
+    (open) edge [bend right=30] node[left=1mm] {OpenDispute} (dispute)
+    (dispute) edge [bend right=30] node[right=1mm] {ConsensusResolve} (open)
+    (dispute) edge [bend right=45] node[below=1mm] {ArbitrationResolve} (close);
+\end{tikzpicture}
+\end{center}
+
+Состояние dispute является единым для всех ситуаций, которые к нему приводят. Как только контракт фиксирует это состояние, то в зависимости от действий участников канала, он может вернуться в состояние open или быть закрытым. Переход к статусу open осуществляется если участники смогли согласовать новое состояние. Если же спор решается через арбитраж смарт-контракта, то канал переходит к статусу close.
+
+Now we can say that a $ Game \ Channel $ is a channel $\gamma$ such that Player and Dealer use protocols described in this paper. 

@@ -1,0 +1,53 @@
+\section{Introduction}
+	Большинство видеоигр (и особенно представители геймблинга)  требуют постоянного и быстрого взаимодействия между участвующими в игре сторонами. Но многие блокчейн-системы в данный момент не могут обеспечить высокую скорость генерации блоков и среднее время транзакции. Так, например, Ethereum генерирует новый блок примерно раз в 15 секунд[https://ian.pw/posts/2017-12-08-why-eos-will-overtake-ethereum-in-high-performance-smart-contracts.html], а среднее время транзакции занимает 6 минут[https://www.abitgreedy.com/transaction-speed/\#transaction-speed]. Такой скорости  недостаточно для комфортной игры. Более того, отправка любой транзакции в большинстве систем требует некоторое количество fee, что повышает общие затраты на каждую игровую сессию.
+
+	Для того, чтобы исправить ситуацию применяются так называемые Layer 2 solutions [https://medium.com/l4-media/making-sense-of-ethereums-layer-2-scaling-solutions-state-channels-plasma-and-truebit-22cb40dcc2f4], которые являются надстройкой над mainnet выбранного блокчейна. Одним из таких решений является технология State Channels. В данной статье мы подробнее рассмотрим одну из возможных реализаций State Channels нацеленную на использование в геймблинге.
+
+		\subsection {State Channels overview}
+	State Channels представляют собой обобщенный вариант Payment Channels[ссылка], позволяющих проводить instant fee-less payments между двумя участниками канала, которые позже можно перенести на блокчейн.
+
+	State Channel в упрощенном виде работает по следующему алгоритму[https://www.jeffcoleman.ca/state-channels/]:
+	\begin{enumerate}
+		\item Part of the blockchain state is locked via smart contract, so that a specific set of participants must completely agree with each other to update it. This state is called the \textit {state deposit}.
+		\item Participants update the state amongst themselves by constructing and signing transactions that could be submitted to the blockchain.
+		\item Finally, participants submit the state back to the blockchain, which closes the state channel.
+	\end{enumerate}
+
+	В идеальном случае участники канала имеют всего два взаимодействия с блокчейном: открытие канала и его согласованное закрытие с изменением начального состояния. 
+
+	Случай, когда возникают разногласия по поводу текущего состояния, будем называть \textit {dispute}. В таком случае решение о текущем состоянии системы ложится на смарт-контракт, который выступает в качестве арбитра и проводит  \textit {dispute resolution} на основе присланных участниками данных.
+
+
+		\subsection {Requirements for state channels}
+	Для дальнейшего описания и анализа State Channels определим базовые требования безопасности, предъявляемые к ним. Такие требования были представлены в [statechannels]:
+	\begin{itemize}
+		\item Trustlessness - parties who entrust state to properly initialized state channel should not significantly increase the risk of that state being manipulated. 
+		\item Finality - state-channel-operations have the same degree of finality and irreversibility as the analogous operation performed directly on the chain itself.
+	\end{itemize}
+	Также gambling industry задает свои дополнительные требования к каналам:
+	\begin{itemize}
+		\item Minimize the communication complexity in state channels.
+		\item Возможность provable fair random generation.
+		\item Minimize the time requried for this generation.
+		\item Моментальная проверка полученного случайного числа. 
+		\item После совершения ставки, одна из сторон должна в конечном счете выплатить долг другой стороне. 
+	\end{itemize}
+
+	Исполнение указанных требований позволит проводить игры, которые будут честными и удобными для всех участников системы. 
+		\subsection {Related works} 
+	Payment Channels[spankchain, stk] similar to state channels, but state deposit contains only баланс участников. Payment Channels Networks представляют собой множество отдельных payment channels, которые попарно соединяются между собой при необходимости. Наиболее известными реализациями такого подхода являются The Lightning Network для Bitcoin и The Raiden Network для Ethereum. Так как payment channels не хранят никакой информации об игровом процессе, они неудобны для реализации игр. 
+
+	State channels were first described in detail by Jeff Coleman in [https://www.jeffcoleman.ca/state-channels/] и затем получили распространение в различных работах [https://github.com/aeternity/pro tocol/blob/master/channels/README.md, https://allquantor.at/blockchainbib/pdf/miller2017sprites.pdf, https://arxiv.org/pdf/1807.11378.pdf]. Generalized State Channels, описанные в [statechannels] расширяют возможности State Channels, позволяя users to install new functionality in an existing channel without touching the blockchain. Схожая идея была независимо разработана и реализована в Perun[].  Для повышения надежности state channels McCorry et all в [https://www.cs.cornell.edu/~iddo/pisa.pdf] описали механизм, защищающий against execution fork attacks. Однако, все эти работы представляли обобщенный подход к построению state channels, без учета особенностей индустрии игр. 
+
+Свою реализацию State Channels для игр представляют FunFair[]. Она называется Fate Channels. Fate Channels предоставляют provable fair pseudorandom numbers genetation, основанную на схеме commit-reveal. Magmo[] разработали framework, который позволяет организовывать каналы для игр между несколькими сторонами. Отметим, что в силу общих особенностей state channels, подходы Magmo и FunFair (как и наш протокол) дают возможность реализовывать только определенные классы игр. Acebusters предложили свой вариант State Channels, специализированный для игры в покер [acebusters yellow paper].  
+
+		\subsection {Our contribution}
+	For the purposes of this paper, назовем simple pvp-games любые игры, которые удовлетворяют следующим требованиям:
+	\begin{itemize}
+		\item В игре только две стороны (например, игрок и казино).
+		\item Для игры, возможно, требуется random number generation. 
+		\item После каждого хода любой из сторон есть некоторое конечное состояние игры, на основе которого можно определить победителя и/или распределить средства между участниками. 
+	\end{itemize}
+	Мы представляем технологию Game Channels, разработанную командой DAO.Casino, которая позволяет запускать  simple pvp-games с использованием технологии блокчейн, без оплаты дополнительных транзакций и задержек между раундами игры. Данное решение удовлетворяет всем требованиям к state channels, указанным ранее. Реализация Game Channels для Ethereum доступна в [].
+
+	Game Channels являются частным случаем State Channels, нацеленным на решение вопросов геймблинг индустрии. Для того, чтобы обеспечить возможность provable fair random number generation как часть Game Channel используется алгоритм Signidice[]. Signidice генерирует случайные числа при помощи детерминированной электронной подписи одного игрока и случайного seed другого игрока. В разделе 3 мы подробно опишем "ассиметричный" вариант работы Game Channels, который предполагает, что в качестве одного из участников канала выступает казино, а в качестве второго - обычный игрок. Note that можно избавиться от "ассиметричности" протокола, чтобы двое равноправных игроков могли играть вместе. Эта модификация, как и некоторые другие, описаны в разделе 4.

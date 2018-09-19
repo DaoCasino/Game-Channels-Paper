@@ -1,0 +1,532 @@
+ 	\section{Game Channels} \label{gamechannel}
+В этом разделе мы подробно опишем протоколы, которые позволяют двум сторонам открыть game channel, сыграть в некоторую игру, закрыть канал и получить свои деньги, не опасаясь обмана со стороны conterparty. Также здесь мы представим механизм разрешения диспутов.\\
+
+\begin{table}[h]
+
+\caption{The names of variables and their meanings}
+% \rowcolors{1}{lightgray}{white}
+\begin{tabular}{|l|c|l|}
+\hline
+Name&Type&Descriprion\\
+\hline
+channelId & bytes32 & Unique channel identifier\\ 
+
+playerAddress & address & Player's ethereum-address\\            
+dealerAddress & address & Dealer's ethereum-address\\  
+gameContractAddress & address & Ethereum-address of the game\\             
+playerBalance & uint256 & Player's deposit value\\                   
+dealerBalance & uint256 & Dealer's deposit value\\                   
+timestamp & uint256 &  Information identifying when a message sent\\                  
+RSAfingerprint & bytes32 &  Merkle-tree fingerprint of the RSA public key\\  
+gameData & bytes & Информация о ходе игры\\
+round & uint256 & Round number of the game session \\
+bet & uint256 & Player's bet \\
+seed & bytes32 & Random seed for PRNG\\
+totalBet & uint256 & Общая сумма ставок игрока \\
+flag & bool &Closing flag \\
+maxGame, minGame & uint256 & Boundaries of random numbers in the game\\
+\hline
+\end{tabular}
+\end{table}
+
+		\subsection {Opening a channel}
+Игрок выступает в качестве инициатора открытия канала. Для открытия канала участники согласуют некоторое начальное состояние и подтверждают его своими подписями. Далее транзакцию с состоянием и подписями участников отправляют на смарт-контракт, который проверяет валидность данных. В транзакции содержится уникальный идентификатор канала $channelId = H(playerAddress,  dealerAddress, timestamp)$. Отметим, что транзакцию с открытием канала может отправить любой из участников. Для простоты будем считать, что эту транзакцию отправляет дилер. Последовательность выполнения обмена сообщениями отображена в протоколе \autoref {alg:openchannel}
+\begin{algorithm}
+\floatname{algorithm}{Protocol}
+\caption{Opening a channel} \label{alg:openchannel}
+\begin{enumerate}
+	\item Игрок отправляет дилеру сообщение о том, что он готов сыграть на некоторую сумму токенов, которая есть в наличии на его кошельке.
+\begin{center}
+	 $open\_message\_player = (playerAddress, playerBalance, dealerAddress,$\\$ channelId,gameContractAddress)$
+\end{center}
+	\item Дилер генерирует модуль и публичный ключ RSA $RSA\_public\_key= (N,e)$ и вычисляет $RSAfingerprint$. Затем он формирует сообщение для открытия канала:
+\begin{center}
+	 $open\_message = (channelId, playerAddress,  playerBalance, dealerAddress,$\\$dealerBalance, gameData, timestamp, RSAfingerprint,$\\$gameContractAddress)$
+	$dealer\_signed\_message = ECDSA.Sign(open\_message)$
+\end{center}
+	\item Дилер отправляет игроку данные:
+\begin{center}
+$(RSA\_public\_key, open\_message,dealer\_signed\_message)$
+\end{center}
+	\item Игрок получает сообщение, проверяет помещенные в него данные, и затем сам подписывает $open\_message$ и отправляет подпись дилеру.
+\begin{center}
+	$player\_signed\_message = ECDSA.Sign(open\_message)$
+\end{center}
+	\item Если $player\_signed\_message$ валидно, то дилер отправляет следующие данные на контракт:
+\begin{center}
+$(open\_message,dealer\_signed\_message,player\_signed\_message)$
+\end{center}
+\end{enumerate}
+\end{algorithm}
+\begin{algorithm}
+\begin{enumerate}
+\setcounter{enumi}{5}
+\item Контракт проверяет полученные подписи на валидность. Если они верные, то таким образом определено согласие обеих сторон на открытие канала. Затем контракт замораживает средства обоих участников для игры и изменяет статус канала на $Open$. 
+\begin{lstlisting}
+    function openChannel(
+        channelId
+        playerAddress,
+        dealerAddress,
+        playerBalance,
+        dealerBalance,
+        timestamp,
+        gameData,
+        RSAfingerprint,
+        player_signed_message,
+        dealer_signed_message
+    )
+\end{lstlisting}
+\end{enumerate}
+\end{algorithm}
+
+
+
+\theoremstyle{definition}
+\newtheorem{exmp}{Example}[section]
+\begin{exmp}
+Боб является владельцем казино. Алиса решает воспользоваться услугами Боба и сыграть в рулетку, представленную в списке игр казино. Для начала Алиса lock на контракте 100 токенов, которые в дальнейшем собирается использовать в качестве депозита. Далее она посылает сообщение Бобу:
+\\
+\\
+\begin{tabular}{ccc}
+   	\begin{tabular}{c}
+   	Alice:\\
+	$0xde8456...$\\
+   	\end{tabular} &
+   \begin{tabular}{l}
+   $\underrightarrow{\quad (0xde8456..., 100,
+ 0x87ff5a..., channelId) \quad}$
+   \end{tabular}&
+  	 \begin{tabular}{c}
+ 	 Bob:\\
+	$0x87ff5a...$\\
+   	\end{tabular} \\
+\end{tabular}\\
+
+Боб рассматривает сообщение Алисы, и принимает решение, что он согласен провести игру. Он посылает Алисе сообщение:
+\\
+\\
+\begin{tabular}{ccc}
+   	\begin{tabular}{c}
+   	Alice:\\
+	$0xde8456...$\\
+   	\end{tabular} &
+   \begin{tabular}{c}
+   $\underleftarrow{\quad (channelId,0xde8456...,  100, 0x87ff5a..., \quad $ \\  $ \quad 5000,  gameData,  timestamp,\quad $ \\  $ \quad RSAfingerprint, Bob\_signature ) \quad}$
+   \end{tabular}&
+  	 \begin{tabular}{cl}
+ 	 Bob:\\
+	$0x87ff5a...$\\
+   	\end{tabular} \\
+\end{tabular}\\
+\\
+
+Алиса проверяет полученное от Боба сообщение, и, убедившись, что все верно, сама подписывает сообщение от Боба и отправляет его.
+\\\
+\\
+\begin{tabular}{ccc}
+   	\begin{tabular}{c}
+   	Alice:\\
+	$0xde8456...$\\
+   	\end{tabular} &
+   \begin{tabular}{c}
+   $\underrightarrow{\quad (channelId,0xde8456...,  100, 0x87ff5a..., \quad $ \\  $ \quad 5000,  gameData,  timestamp,\quad $ \\  $ \quad RSAfingerprint, Alice\_signature ) \quad}$
+   \end{tabular}&
+  	 \begin{tabular}{cl}
+ 	 Bob:\\
+	$0x87ff5a...$\\
+   	\end{tabular} \\
+\end{tabular}\\
+\\
+
+Боб, удостоверившись в валидности подписи Алисы, отправляет ее и свою подпись на контракт вместе с сообщением.\\
+\begin{tabular}{ccc}
+   	\begin{tabular}{c}
+ 	 Bob:\\
+	$0x87ff5a...$\\
+   	\end{tabular} &
+   \begin{tabular}{c}
+   $\underrightarrow{\quad (channelId,0xde8456...,  100, 0x87ff5a..., \quad $ \\  $ \quad 5000,  gameData,  timestamp,\quad $ \\  $ \quad RSAfingerprint, Bob\_signature, \quad $ \\  $ \quad Alice\_signature ) \quad}$
+   \end{tabular}&
+  	 \begin{tabular}{cl}
+ 	 Contract:\\
+	$0x8a4654...$\\
+   	\end{tabular} \\
+\end{tabular}\\
+\\
+
+Смарт-контракт проверяет подписи Алисы и Боба. С этого момента канал открыт.
+\end{exmp}
+
+
+
+		\subsection {Interaction within the channel}
+После открытия канала весь процесс игры делится на раунды. В каждом раунде игрок принимает некоторые игровые решения (например, делает ставку) и отсылает их вместе со случайным seed дилеру. Дилер на основе этого seed вычисляет результаты игры. Если игрок согласен с честностью полученных результатов, то игра переходит к следующему раунду. Процесс взаимодействия сторон в течение одного раунда представлен в протоколе \autoref{alg:intchannel}. \\
+\begin{algorithm}
+\floatname{algorithm}{Protocol}
+\caption{Messaging in the channel} \label{alg:intchannel}
+\begin{enumerate}
+	\item Игрок генерирует $seed$  и  формирует сообщения:
+\begin{center}
+$ seed\_message = (channelId, bet, round, gameData, seed, gameContractAddress)$
+$signed\_seed\_message = ECDSA.Sign(seed\_message)$ 
+\end{center}
+ и посылает его дилеру. 
+	\item Дилер проверяет $signed\_seed\_message$, $seed\_message$ и производит следующие вычисления:
+ \begin{algorithmic}
+\State $V = H(seed\_message)$
+\State $S = RSA.Sign(V)$
+\State $S_{hash} = H(S)$
+\State $gameRange = maxGame -  minGame + 1$
+\While {$S_{hash} \geq \left\lfloor 2^{hash.size} / gameRange \right\rfloor \cdot gameRange$}
+\State$ S_{hash}\gets H(S_{hash})$
+\EndWhile
+\State $L = (S_{hash}$ mod $gameRange) + minGame$
+ \end{algorithmic}
+ Применяя игровую логику к полученного числу, дилер просчитывает результат раунда.
+\item Далее он отправляет сообщение
+\begin{center}
+ $message = (L,S, round, gameData, playerBalance, dealerBalance)$
+\end{center}
+ игроку.
+	\item Игрок проверяет, что число L, результаты игры и новый баланс участников рассчитаны верно.
+	\item Игрок пересылает ему $message$ вместе со своей подписью. 
+\begin{center}
+ $signed\_message = ECDSA.Sign(message)$
+\end{center}
+\end{enumerate}
+\end{algorithm}
+
+
+\begin{algorithm}
+\begin{enumerate}
+\setcounter{enumi}{5}
+ \item Если игрок или дилер хочет обновить состояние игры, находящееся на блокчейне, то он вызывает функцию обновления в смарт-контракте:
+\begin{lstlisting}
+    function updateChannel(
+        channelId ,
+        playerBalance,
+        dealerBalance,
+        totalBet,
+        round,
+        signed_message
+    )
+\end{lstlisting}
+\end{enumerate}
+\end{algorithm}
+
+\begin{exmp}
+Продолжая вышеобозначенный пример, Алиса делает свою ставку в 10 токенов на красное, формирует сообщение и подписывает его: 
+\\
+\\
+\begin{tabular}{ccc}
+   	\begin{tabular}{c}
+   	Alice:\\
+	$0xde8456...$\\
+   	\end{tabular} &
+   \begin{tabular}{c}
+   $\underrightarrow{\quad (channelId, 10, 1, gameData, qw2ert5t,\quad $ \\  $ \quad 0x8a4654..., signature ) \quad}$
+   \end{tabular}&
+  	 \begin{tabular}{cl}
+ 	 Bob:\\
+	$0x87ff5a...$\\
+   	\end{tabular} \\
+\end{tabular}\\
+\\
+
+Боб, получив сообщение от Алисы, начинает расчитывать исход этого раунда. Для этого он находит хэш от данных Алисы и подписывает его при помощи RSA. Получаем $0x5r43c...$ Далее Боб на основе полученного числа вычисляет случайное число, определяющее результат игры. Предположим, этим числом оказывается 14. Оно располагается на красном поле. Алиса выигрывает этот раунд.
+Боб формирует сообщение для Алисы:
+\\
+\\
+\begin{tabular}{ccc}
+   	\begin{tabular}{c}
+   	Alice:\\
+	$0xde8456...$\\
+   	\end{tabular} &
+   \begin{tabular}{c}
+   $\underleftarrow{\quad (14, 0x5f43c..., 1, gameData, 110, 4990) \quad}$
+   \end{tabular}&
+  	 \begin{tabular}{cl}
+ 	 Bob:\\
+	$0x87ff5a...$\\
+   	\end{tabular} \\
+\end{tabular}\\
+\\
+
+Алиса согласна с полученными данными после их проверки. Она подписывает сообщение и посылает его Бобу.
+\\
+\\
+\begin{tabular}{ccc}
+   	\begin{tabular}{c}
+   	Alice:\\
+	$0xde8456...$\\
+   	\end{tabular} &
+   \begin{tabular}{c}
+   $\underrightarrow{\quad (14, 0x5f43c..., 1, gameData, 110, 4990,\quad $ \\  $ \quad signature ) \quad}$
+   \end{tabular}&
+  	 \begin{tabular}{cl}
+ 	 Bob:\\
+	$0x87ff5a...$\\
+   	\end{tabular} \\
+\end{tabular}\\
+\\
+
+При желании любого из участников, можно отправить подписанное сообщение на контракт и обновить хранимые в нем данные. 
+
+Далее Боб с Алисой обмениваются сообщениями до тех пор, пока кто-то из них не решит завершить канал по какой-либо причине. 
+\end{exmp}
+
+		\subsection {Closing the channel}
+Если один из участников хочет завершить канал, он делает соответствующий запрос. Это может произойти по следующим причинам: \label{closing}
+\begin{enumerate}
+	\item Игрок или дилер решает прекратить игру по своему желанию. Протокол \autoref{alg:close1} представляет собой последовательность действий в этом случае.
+	\item У кого-то из участников нулевой баланс или не хватает токенов для следующей ставки. Если один из участников посылает запрос о закрытие канала, а второй принимает, то мы действуем согласно протоколу \autoref{alg:close1}. Иначе мы используем протокол \autoref{alg:close2}.
+	\item Время жизни канала вышло. Заметим, что участники должны самостоятельно следить за временем работы канала. После окончания времени действия канала все функции смарт-контракта становятся недоступны, кроме функции $closeBYTime$. Протокол \autoref{alg:close3}.
+	\item Кто-то из участников прекращает отвечать на сообщения. в таком случае мы используем \autoref{alg:close4}.
+	\item  Кто-то из участников подделывает данные. При попытке загрузить неправильные данные в канал, контракт присылает сообщение об ошибке. 
+Таким образом, некорректные данные не могут попасть в блокчейн, и могут храниться только у участников. Когда один из участников решает, что другой обманывает его, то следует протоколу \autoref{alg:close4}. Отметим, что смартконтракт не отличает эту ситуацию и предыдущую с точки зрения внутренней реализации.
+\end{enumerate}
+\begin{algorithm}
+\floatname{algorithm}{Protocol}
+\caption{Закрытие канала по согласию} \label{alg:close1}
+\begin{enumerate}
+	\item Участник, который решил завершить канал, посылает сообщение c текущим состоянием раунда игры второму участнику.
+\begin{center}
+$message = (channelId, playerBalance, dealerBalance, totalBet, round)$
+\end{center} 
+	\item Если второй участник согласен с этим состоянием, то он возвращает следующее сообщение вместе с его подписью:
+\begin{center}
+$close\_message = (channelId, playerBalance, dealerBalance, totalBet, round, flag,$\\$ gameContractAddress)$\\
+$party2\_signed\_message = ECDSA.Sign(close\_message)$
+\end{center}
+	\item Первый участник проверяет полученное сообщение, и, если он согласен с его содержимым, он также подписывает $close\_message$.
+\begin{center}
+$party1\_signed\_message = ECDSA.Sign(close\_message)$
+\end{center}
+	\item Дилер, имея на руках две подписи $party1\_signed\_message$ и $party2\_signed\_message$, отправляет их вместе с $close\_message$ в контракт. \label{deal_sig}
+	\item Контракт осуществляет проверку валидности полученных подписей. Затем удостоверяется в равенстве сумм замороженных на контракте токенов и токенов, которые дилер и игрок собираются вывести из игры.
+\begin{lstlisting}
+    function closeByConsent(
+        channelId,
+        playerBalance,
+        dealerBalance,
+        totalBet,
+        round,
+        party1_signed_message,
+        party2_signed_message 
+    )
+\end{lstlisting}
+\end{enumerate}
+\end{algorithm}
+
+\begin{algorithm}
+\begin{enumerate}
+\setcounter{enumi}{5}
+	\item Если условия соблюдены, то контракт запускает функцию $closeChannel(channelId)$  и распределяет токены между участниками согласно полученным данным.
+	\item Контракт удаляет канал, используя функцию $removeChannel(channelId)$. Статус канала изменяется на $Close$.
+\end{enumerate}
+\end{algorithm}
+
+
+\begin{algorithm}
+\floatname{algorithm}{Protocol}
+\caption{Закрытие канала из-за недостаточного баланса} \label{alg:close2}
+\begin{enumerate}
+	\item Первый участник обращается к функции смарт-контракта $updateChannel$, передавая ей последнее подписанное состояние, в котором у одного из участников нулевой или недостаточный для ставки баланс.
+	\item Функция $updateChannel$ обновляет хранимые данные, и помимо этого, проверяет баланс участников. Если нулевой или недостаточный баланс подтверждается, то канал закрывается и удаляется. (см. пункты 6 и 7 в протоколе \autoref{alg:close1})
+\end{enumerate}
+\end{algorithm}
+
+
+\begin{algorithm}
+\floatname{algorithm}{Protocol}
+\caption{Закрытие канала по окончанию времени} \label{alg:close3}
+ \begin{enumerate}
+	\item Один из участников вызывает функцию $closeByTime(channelId)$. Внутри этой функции проверяется, был ли открыт диспут во время ее выполнения.
+	\item Если это условие выполняется, то запускается функция $closeByDispute(channelId)$, который трактует состояние канала в пользу игрока. Т.е максимальный возможный выигрыш по игровой логике отходит игроку. 
+	\item Канал закрывается и удаляется. (См. пункты 6 и 7 из протокола \autoref{alg:close1}).
+\end{enumerate}
+\end{algorithm}
+
+\begin{algorithm}
+\floatname{algorithm}{Protocol}
+\caption{Закрытие канала по причине неответа или ложных данных} \label{alg:close4}
+\begin{enumerate}
+	\item Участник загружает последнее согласованное состояние в смарт-контракт, используя функцию $updateChannel$.
+	\item Затем участник пытается открыть диспут, используя следующую функцию в контракте:
+\begin{lstlisting}
+    function openDispute(
+        channelId,
+        round,
+        playerBalance,
+        gameData,
+        seed,
+         playerSignature
+    )
+\end{lstlisting}
+где $ playerSignature = ECDSA.Sign(channelId, round, \\ playerBalance, gameData, seed)$.
+	\item Смарт-контракт проверяет полученные данные от участника, и если они валидны, то открывается диспут. Статус канала изменяется на $Dispute$.
+	\item  Участникам дается время в $t1$ блоков, чтобы вызвать $updateChannel$, в котором необходимо загрузить валидное более новое состояние канала, либо $doubleSign$, который может вызвать только дилер. В первом случае мы переходим к шагу протокола 4.1, а во втором к 4.2.
+\begin{enumerate}
+	\item После проверки корректности данных, $updateChannel$ сравнивает номер раунда, с которым был открыт диспут, с номером раунда в новом состоянии. Если разница строго больше единицы, то участник, открывший диспут, лишается депозита. Канал закрывается и удаляется. (См. пункты 6 и 7 из протокола \autoref{alg:close1}). Иначе после обновления контракта диспут удаляется, а статус канала обратно возвращается к $Open$. Отметим, что неважно от кого поступит обновление канала. \label{upd}
+	\item  В случае $doubleSign$ смарт-контракт проверяет, не было ли получено два разных сообщения с подписью игрока с одинаковым раундом. Если это так, то игрок лишается своего депозита.  Канал закрывается и удаляется. (См. пункты 6 и 7 из протокола \autoref{alg:close1}). \label{dbl}
+\end{enumerate}
+\end{enumerate}
+\end{algorithm}
+\begin{algorithm}
+\begin{enumerate}
+	\setcounter{enumi}{4}
+	\item По истечению $t1$ блоков у участников открывается время в $t2$ блоков, в течение которых они могут либо обновить состояние в канале или вызвать функцию $doubleSign$, либо участник с ролью дилер может вызвать функцию разрешения диспута $resolveDispute$ из контракта. Если ничего из перечисленного не происходит за $t1+t2$ блоков, то переходим к протоколу \autoref{alg:close3}. В этом случае дальнейшие шаги не выполняются. \label{block}
+\begin{lstlisting}
+function resolveDispute(
+        channelId ,
+        N,
+        E,
+        S
+    )
+\end{lstlisting}
+\begin{enumerate}
+	\item  Функция $resolveDispute$ проверяет RSA public key дилера и корректность RSA подписи $S$. Если они неверны, то вызов отклоняется.
+	\item Функция $resolveDispute$ вызывает функцию $runGame(channelId , playerBalance, S)$
+	 \item Функция $runGame$ выполняет проверку игровой логики и распределяет баланс каждого из участников.
+	\item  Канал закрывается и удаляется. (См. пункты 6 и 7 из протокола \autoref{alg:close1})
+\end{enumerate}
+\end{enumerate}
+\end{algorithm}
+
+\begin{exmp}
+Продолжаем пример. Алиса ставит в пятом раунде ставку в 20 токенов, и отправляет сообщение с данными Бобу.
+\\
+\\
+\begin{tabular}{ccc}
+   	\begin{tabular}{c}
+   	Alice:\\
+	$0xde8456...$\\
+   	\end{tabular} &
+   \begin{tabular}{c}
+   $\underrightarrow{\quad (channelId, 20, 5, gameData, qwrtty,\quad $ \\  $ \quad 0x8a4654... ) \quad}$
+   \end{tabular}&
+  	 \begin{tabular}{cl}
+ 	 Bob:\\
+	$0x87ff5a...$\\
+   	\end{tabular} \\
+\end{tabular}\\
+\\
+
+Но в этот момент у Боба обрывается соединение и он не может ответить Алисе. Алиса не получает ответа и загружает последнее согласованное с Бобом состояние в канал, а затем открывает диспут с новым запросом. 
+Контракт дает время в $t1$ блоков Бобу загрузить более новое состояние игры в канал. После прохождения $t1 - 1$ блоков Боб восстанавливает соединение и успевает загрузить новое состояние с результатами игры в канал при помощи функции $updateChannel$. Диспут стирается, и Алиса с Бобом продолжают играть.
+
+Когда время жизни канала на раунде n стало подходить к концу, Боб решил закрыть канал. Он делает запрос к Алисе, согласна ли она закрыть канал с текущим состоянием.
+\\
+\\
+\begin{tabular}{ccc}
+   	\begin{tabular}{c}
+   	Alice:\\
+	$0xde8456...$\\
+   	\end{tabular} &
+   \begin{tabular}{c}
+   $\underleftarrow{\quad (channelId, 85, 5015, 375, n) \ \ \ \  \ \  \quad}$
+   \end{tabular}&
+  	 \begin{tabular}{cl}
+ 	 Bob:\\
+	$0x87ff5a...$\\
+   	\end{tabular} \\
+\end{tabular}\\
+\\
+
+ Алиса проверяет полученное сообщение, подписывает его и отправляет ответ с данными для завершения игры Бобу.
+\\
+\\
+\begin{tabular}{ccc}
+   	\begin{tabular}{c}
+   	Alice:\\
+	$0xde8456...$\\
+   	\end{tabular} &
+   \begin{tabular}{c}
+   $\underrightarrow{\quad (channelId, 85, 5015, 375, n, true, \quad $ \\  $ \quad0x8a4654..., Alice\_signature ) \quad}$
+   \end{tabular}&
+  	 \begin{tabular}{cl}
+ 	 Bob:\\
+	$0x87ff5a...$\\
+   	\end{tabular} \\
+\end{tabular}\\
+\\
+
+ Боб в свою очередь проверяет данные от Алисы и, удостоверившись в их валидности, подписывает данные и отправляет данные со своей подписью и подписью Алисы на контракт.
+\\
+\\
+\begin{tabular}{ccc}
+   	\begin{tabular}{c}
+   	Bob:\\
+	$0x87ff5a...$\\
+   	\end{tabular} &
+   \begin{tabular}{c}
+   $\underrightarrow{\quad (channelId, 85, 5015, 375, n,  true,\quad $ \\  $ \quad0x8a4654..., Bob\_signature,\quad $ \\  $ \quad Alice\_signature ) \quad}$
+   \end{tabular}&
+  	 \begin{tabular}{cl}
+ 	 Contract:\\
+	$0x8a4654...$\\
+   	\end{tabular} \\
+\end{tabular}\\
+\\
+
+ Условие того, что обе подписи валидны, выполнено. Поэтому контракт, проверив присланные данные, закрывает канал и удаляет его.
+\end{exmp}
+
+\begin{exmp}
+Параллельно с Бобом играет другой игрок, Mallory, который хочет обмануть Боба. Между ними открыт свой канал.
+Mallory делает свою ставку в два токена на красное, формирует сообщение и посылает его Бобу: 
+\\
+\\
+\begin{tabular}{ccc}
+   	\begin{tabular}{c}
+   	Mallory:\\
+	$0xca62a232...$\\
+   	\end{tabular} &
+   \begin{tabular}{c}
+   $\underrightarrow{\quad (channelId, 2, 1, gameData,  vg345f, \quad $ \\  $ \quad0x8a4654... ) \quad}$
+   \end{tabular}&
+  	 \begin{tabular}{cl}
+ 	 Bob:\\
+	$0x87ff5a...$\\
+   	\end{tabular} \\
+\end{tabular}\\
+\\
+
+Боб вычисляет результат для Mallory. Это 20, которая располагается на черном поле. Mallory проигрывает свою ставку. Боб отправляет ему сообщение с исходом раунда:
+\\
+\\
+\begin{tabular}{ccc}
+   	\begin{tabular}{c}
+   	Mallory:\\
+	$0xca62a232...$\\
+   	\end{tabular} &
+   \begin{tabular}{c}
+   $\underleftarrow{\quad (20, 0x5ааа3c..., 1, gameData, 3, 502) \quad}$
+   \end{tabular}&
+  	 \begin{tabular}{cl}
+ 	 Bob:\\
+	$0x87ff5a...$\\
+   	\end{tabular} \\
+\end{tabular}\\
+\\
+
+Mallory не нравится исход раунда. Он пытается отправить состояние с неверными данными, где решение рассчитано в его сторону, Бобу. 
+\\
+\\
+\begin{tabular}{ccc}
+   	\begin{tabular}{c}
+	Mallory:\\
+	$0xca62a232...$\\
+   	\end{tabular} &
+   \begin{tabular}{c}
+   $\underrightarrow{\quad (19, 0x5аа23c..., 1, gameData, 7, 498) \quad}$
+   \end{tabular}&
+  	 \begin{tabular}{cl}
+ 	 Bob:\\
+	$0x87ff5a...$\\
+   	\end{tabular} \\
+\end{tabular}\\
+\\
+
+Боб, проверив сообщение от Mallory, распознает некорректные данные, загружает последнее валидное состояние и открывает диспут, используя функцию $openDispute$. Контракт дает Mallory время в $t1 + t2$ блоков загрузить более новое состояние, подписанное обоими участниками. Mallory снова пытается использовать подделанное состояние, загружая его в канал с помощью функции  $updateChannel$. Смарт-контракт проверяет данные, отмечает, что они невалидны, и выдает ошибку. В итоге Mallory не загружает более нового состояния на канал за $t1$ блоков. Боб теперь запускает функцию $resolveDispute$. $resolveDispute$ в свою очередь, убедившись в валидности данных Боба, вызывает функцию $runGame$, определяющую игровую логику. $runGame$ проверяет ход игры и приходит к тому, что с Mallory надо снять 2 токена, а Бобу их надо начислить на счет. После канал закрывается и удаляется. \\
+\end{exmp}
