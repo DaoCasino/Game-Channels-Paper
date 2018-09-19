@@ -12,12 +12,14 @@
 \usepackage[T2A]{fontenc}
 \usepackage[utf8]{inputenc} 
 \usepackage{blindtext}
+\usepackage{authblk}
 \usepackage{listings}
 \usepackage{blindtext}
 \usepackage{amsthm}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{lipsum}
+\newcommand*\samethanks[1][\value{footnote}]{\footnotemark[#1]}
 \renewcommand{\labelenumii}{\theenumii}
 \renewcommand{\theenumii}{\theenumi.\arabic{enumii}.}
 \usetikzlibrary{positioning,fit,calc,arrows}
@@ -29,7 +31,14 @@
 \theoremstyle{remark}
 \newtheorem*{remark}{Remark}
 \title {Gamechannel}
-\author {Alisa Chernyaeva \and Ilia Shirobokov \thanks{DaoCasino team}}
+\author {Alisa Chernyaeva\thanks{Maria}}
+\author{Ilia Shirobokov\samethanks} 
+\author{  Alexander Davydov\samethanks}
+%\author[add1]{Ilia Shirobokov}
+\affil{Research department, DAO.Casino Company}
+\affil{ \href{mailto:Research@Dao.casino}{Research@Dao.casino}}
+%\affil[]{youngPussy@Dao.casino}
+%\address[add1]{Research department, company DaoCasino}
 \date {August 2018}
 \hyphenation{every-where}
 \begin{document}
