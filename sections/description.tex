@@ -16,7 +16,7 @@ dealerAddress & address & Dealer's ethereum-address\\
 gameContractAddress & address & Ethereum-address of the game\\             
 playerBalance & uint256 & Player's deposit value\\                   
 dealerBalance & uint256 & Dealer's deposit value\\                   
-timestamp & uint256 &  Information identifying when a message sent\\                  
+openingBlock & uint256 &  Information identifying when a message sent\\                  
 RSAfingerprint & bytes32 &  Merkle-tree fingerprint of the RSA public key\\  
 gameData & bytes & Информация о ходе игры\\
 round & uint256 & Round number of the game session \\
@@ -24,13 +24,13 @@ bet & uint256 & Player's bet \\
 seed & bytes32 & Random seed for PRNG\\
 totalBet & uint256 & Общая сумма ставок игрока \\
 flag & bool &Closing flag \\
-maxGame, minGame & uint256 & Boundaries of random numbers in the game\\
+maxNumber, minNumber & uint256 & Boundaries of random numbers in the game\\
 \hline
 \end{tabular}
 \end{table}
 
 		\subsection {Opening a channel}
-Игрок выступает в качестве инициатора открытия канала. Для открытия канала участники согласуют некоторое начальное состояние и подтверждают его своими подписями. Далее транзакцию с состоянием и подписями участников отправляют на смарт-контракт, который проверяет валидность данных. В транзакции содержится уникальный идентификатор канала $channelId = H(playerAddress,  dealerAddress, timestamp)$. Отметим, что транзакцию с открытием канала может отправить любой из участников. Для простоты будем считать, что эту транзакцию отправляет дилер. Последовательность выполнения обмена сообщениями отображена в протоколе \autoref {alg:openchannel}
+Игрок выступает в качестве инициатора открытия канала. Для открытия канала участники согласуют некоторое начальное состояние и подтверждают его своими подписями. Далее транзакцию с состоянием и подписями участников отправляют на смарт-контракт, который проверяет валидность данных. В транзакции информация о канале закрепляется за уникальным идентификатором канала $channelId = H(gameContractAddress, playerAddress, dealerAddress, playerBalance, dealerBalance, openingBlock, RSAfingerprint)$. Отметим, что транзакцию с открытием канала может отправить любой из участников. Для простоты будем считать, что эту транзакцию отправляет дилер. Последовательность выполнения обмена сообщениями отображена в протоколе \autoref {alg:openchannel}
 \begin{algorithm}
 \floatname{algorithm}{Protocol}
 \caption{Opening a channel} \label{alg:openchannel}
@@ -41,7 +41,7 @@ maxGame, minGame & uint256 & Boundaries of random numbers in the game\\
 \end{center}
 	\item Дилер генерирует модуль и публичный ключ RSA $RSA\_public\_key= (N,e)$ и вычисляет $RSAfingerprint$. Затем он формирует сообщение для открытия канала:
 \begin{center}
-	 $open\_message = (channelId, playerAddress,  playerBalance, dealerAddress,$\\$dealerBalance, gameData, timestamp, RSAfingerprint,$\\$gameContractAddress)$
+	 $open\_message = (channelId, playerAddress,  playerBalance, dealerAddress,$\\$dealerBalance, gameData, openingBlock, RSAfingerprint,$\\$gameContractAddress)$
 	$dealer\_signed\_message = ECDSA.Sign(open\_message)$
 \end{center}
 	\item Дилер отправляет игроку данные:
@@ -69,7 +69,7 @@ $(open\_message,dealer\_signed\_message,player\_signed\_message)$
         dealerAddress,
         playerBalance,
         dealerBalance,
-        timestamp,
+        openingBlock,
         gameData,
         RSAfingerprint,
         player_signed_message,
@@ -84,7 +84,7 @@ $(open\_message,dealer\_signed\_message,player\_signed\_message)$
 \theoremstyle{definition}
 \newtheorem{exmp}{Example}[section]
 \begin{exmp}
-Боб является владельцем казино. Алиса решает воспользоваться услугами Боба и сыграть в рулетку, представленную в списке игр казино. Для начала Алиса lock на контракте 100 токенов, которые в дальнейшем собирается использовать в качестве депозита. Далее она посылает сообщение Бобу:
+Боб является владельцем казино. Алиса решает воспользоваться услугами Боба и сыграть в рулетку, представленную в списке игр казино. Для начала Алиса approve контракту игры 100 токенов, которые в дальнейшем собирается использовать в качестве депозита. Далее она посылает сообщение Бобу:
 \\
 \\
 \begin{tabular}{ccc}
@@ -94,7 +94,7 @@ $(open\_message,dealer\_signed\_message,player\_signed\_message)$
    	\end{tabular} &
    \begin{tabular}{l}
    $\underrightarrow{\quad (0xde8456..., 100,
- 0x87ff5a..., channelId) \quad}$
+ 0x87ff5a...) \quad}$
    \end{tabular}&
   	 \begin{tabular}{c}
  	 Bob:\\
@@ -111,7 +111,7 @@ $(open\_message,dealer\_signed\_message,player\_signed\_message)$
 	$0xde8456...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underleftarrow{\quad (channelId,0xde8456...,  100, 0x87ff5a..., \quad $ \\  $ \quad 5000,  gameData,  timestamp,\quad $ \\  $ \quad RSAfingerprint, Bob\_signature ) \quad}$
+   $\underleftarrow{\quad (0xde8456...,  100, 0x87ff5a..., \quad $ \\  $ \quad 5000,  gameData,  openingBlock,\quad $ \\  $ \quad RSAfingerprint, Bob\_signature ) \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -129,7 +129,7 @@ $(open\_message,dealer\_signed\_message,player\_signed\_message)$
 	$0xde8456...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underrightarrow{\quad (channelId,0xde8456...,  100, 0x87ff5a..., \quad $ \\  $ \quad 5000,  gameData,  timestamp,\quad $ \\  $ \quad RSAfingerprint, Alice\_signature ) \quad}$
+   $\underrightarrow{\quad (channelId,0xde8456...,  100, 0x87ff5a..., \quad $ \\  $ \quad 5000,  gameData,  openingBlock,\quad $ \\  $ \quad RSAfingerprint, Alice\_signature ) \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -145,7 +145,7 @@ $(open\_message,dealer\_signed\_message,player\_signed\_message)$
 	$0x87ff5a...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underrightarrow{\quad (channelId,0xde8456...,  100, 0x87ff5a..., \quad $ \\  $ \quad 5000,  gameData,  timestamp,\quad $ \\  $ \quad RSAfingerprint, Bob\_signature, \quad $ \\  $ \quad Alice\_signature ) \quad}$
+   $\underrightarrow{\quad (channelId,0xde8456...,  100, 0x87ff5a..., \quad $ \\  $ \quad 5000,  gameData,  openingBlock,\quad $ \\  $ \quad RSAfingerprint, Bob\_signature, \quad $ \\  $ \quad Alice\_signature ) \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Contract:\\
@@ -176,11 +176,11 @@ $signed\_seed\_message = ECDSA.Sign(seed\_message)$
 \State $V = H(seed\_message)$
 \State $S = RSA.Sign(V)$
 \State $S_{hash} = H(S)$
-\State $gameRange = maxGame -  minGame + 1$
+\State $gameRange = maxNumber -  minNumber + 1$
 \While {$S_{hash} \geq \left\lfloor 2^{hash.size} / gameRange \right\rfloor \cdot gameRange$}
 \State$ S_{hash}\gets H(S_{hash})$
 \EndWhile
-\State $L = (S_{hash}$ mod $gameRange) + minGame$
+\State $L = (S_{hash}$ mod $gameRange) + minNumber$
  \end{algorithmic}
  Применяя игровую логику к полученного числу, дилер просчитывает результат раунда.
 \item Далее он отправляет сообщение
