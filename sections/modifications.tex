@@ -14,7 +14,7 @@ In this sectuion we introduce some modifications for basic protocol. Мы рас
 \begin{enumerate}
 	\item Участники формируют сообщения следующего вида: \label{intchannel1}
 \begin{center}
-$ seed\_message = (channelId, bet, round, gameData, seed, gameContractAddress)$
+$ seed\_message = (channelId, bet, round, gameData, seed)$
 $signed\_seed\_message = ECDSA.Sign(seed\_message)$ 
 \end{center}
  и посылают их друг другу.
@@ -45,7 +45,7 @@ $signed\_seed\_message = ECDSA.Sign(seed\_message)$
 \setcounter{enumi}{5}
  \item Игроки обмениваются полученными результатами игры и проверяют их. 
 \begin{center}
- $message = (L, round, gameData, player1Balance, player2Balance)$
+ $message = (channelId, round, gameData, player1Balance, player2Balance)$
  $signed\_message = ECDSA.Sign(message)$
 \end{center}
 \item При желании один из игроков может обновить состояние канала, используя свою подпись и подпись оппонента сообщения с результатами игры.
