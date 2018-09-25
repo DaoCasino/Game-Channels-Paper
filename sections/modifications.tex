@@ -14,7 +14,7 @@ Once the channel is open, a round involving interaction of two peer parties take
 	\item Participants generate and exchange messages of the following type:
  \label{intchannel1}
 \begin{center}
-$ seed\_message = (channelId, bet, round, gameData, seed, gameContractAddress)$
+$ seed\_message = (channelId, bet, round, gameData, seed)$
 $signed\_seed\_message = ECDSA.Sign(seed\_message)$ 
 \end{center}
 	\item Participants verify the received $signed\_seed\_message$ and carry out the following calculations:
@@ -44,7 +44,7 @@ $signed\_seed\_message = ECDSA.Sign(seed\_message)$
 \setcounter{enumi}{5}
  \item Players exchange obtained game results and verify the data. 
 \begin{center}
- $message = (L, round, gameData, player1Balance, player2Balance)$
+ $message = (channelId, round, gameData, player1Balance, player2Balance)$
  $signed\_message = ECDSA.Sign(message)$
 \end{center}
 \item If needed, either player may use the two signatures of the result message to update the channel state.
