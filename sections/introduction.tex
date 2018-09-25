@@ -29,7 +29,7 @@
 	Additional security and computational requirements come from the gambling industry:
 	\begin{itemize}
 		\item Minimize the communication complexity in state channels.
-		\item Provable fair random number generation support.
+		\item Provably fair random number generation support.
 		\item Minimize the time requried for this generation.
 		\item Instant verification of randomly generated numbers.
 		\item Once either party makes a bet, one of the parties has to pay the debt to the other in the end. 
@@ -42,7 +42,7 @@
 
 	State channels were first described in detail by Jeff Coleman in [https://www.jecoleman.ca/statechannels/] and were later considered in other works [https://github.com/aeternity/tocol/blob/master/channels/README.md, https://allquantor.at/blockchainbib/pdf/miller2017sprites.https://arxiv.org/pdf/1807.11378.pdf]. Generalized State Channels defined in [statechannels] represent another step forward enabling users to install new functionality into an existing channel without touching the blockchain. A similar idea was independently developed and implemented in Perun[]. To make state channels more trustworthy, McCorry \textit {et al}. [https://www.cs.cornell.edu/ iddo/ pisa.pdf] defined tools preventing execution fork attacks. However, all these works considered general state channel application issues without focusing on the needs of the gambling industry.
 
-	FunFair[] offers a proprietary implementation of state channels called Fate Channels. In particular, it includes a provable fair random numbers generation based on the commit-reveal pattern. Magmo[] developed a framework supporting multiplayer channels. Acebuster designed  state channels tailored to poker [acebusters yellow paper]. It is noteworthy, that all state channel implementations (by Magmo, Fun Fair or DAO.Casino) have limitations in terms of supported game types.
+	FunFair[] offers a proprietary implementation of state channels called Fate Channels. In particular, it includes a provably fair random numbers generation based on the commit-reveal pattern. Magmo[] developed a framework supporting multiplayer channels. Acebuster designed  state channels tailored to poker [acebusters yellow paper]. It is noteworthy, that all state channel implementations (by Magmo, Fun Fair or DAO.Casino) have limitations in terms of supported game types.
 
 		\subsection {Our contribution}
 	For the purposes of this paper, all games meeting the following conditions shall be defined as simple pvp-games:
@@ -54,4 +54,4 @@
 	We offer a \textit {Game Channel} technology that allows launching blockchain-based simple pvp-games without fees for additional transactions and with zero delays between moves/rounds. Our solution meets the above-mentioned requirements to state channels. Game channels implementation for Ethereum is available at [].
 
 	Game channels is an instant of state channels tailored to the needs of the gambling industry. Modification of Signidice[]
-algorithm is used for provable fair random number generation within a game channel. Signidice generates random numbers from a unique digital signature of one player and a random seed of the other player. In section 3 we provide detailed coverage of the "asymmetric" game channel protocol involving a casino and an ordinary player. Note that this "asymmetry" can be avoided to allow two players to gamble against one another. Section 4 covers this and other available modifications.
+algorithm is used for provably fair random number generation within a game channel. Signidice generates random numbers from a unique digital signature of one player and a random seed of the other player. In section 3 we provide detailed coverage of the "asymmetric" game channel protocol involving a casino and an ordinary player. Note that this "asymmetry" can be avoided to allow two players to gamble against one another. Section 4 covers this and other available modifications.
