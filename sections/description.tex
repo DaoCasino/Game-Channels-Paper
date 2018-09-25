@@ -30,7 +30,7 @@ maxNumber, minNumber & uint256 & Boundaries of random numbers in the game\\
 \end{table}
 
 \subsection {Opening a channel}
-Player initiates the channel open event. To open a channel, its participants have to agree upon a specific initial state and confirm it with their signatures. Then the transaction with a state and participant signatures is sent to the smart-contract that verifies data validity. The smart-contract calculates a unique channel ID generated according to the following formula:
+Player initiates the channel open event. To open a channel, its participants have to agree upon a specific initial state and confirm it with their signatures. Then the transaction with a state and participant signatures is sent to the smart-contract that verifies data validity. The smart-contract calculates a unique channel ID generated according to the following formula:\\
  $channelId = H(gameContractAddress, playerAddress,dealerAddress, playerBalance, $ \\ $ dealerBalance, openingBlock, RSAfingerprint)$. Note that either participant may send the opening transaction. For simplicity, let’s assume that it is sent by Dealer. The message exchange sequence is specified in the  \autoref {alg:openchannel} protocol.
 
 \begin{algorithm}
@@ -54,27 +54,29 @@ $(RSA\_public\_key, open\_message,dealer\_signed\_message)$
 \begin{center}
 	$player\_signed\_message = ECDSA.Sign(open\_message)$
 \end{center}
-	\item If the $player\_signed\_message$ is valid, Dealer calls the $openChannel$ smart contract function with the following data:
+\item If the $player\_signed\_message$ is valid, Dealer calls the $openChannel$ smart contract function with the following data:
 \begin{center}
 $(open\_message,dealer\_signed\_message,player\_signed\_message)$
-\end{center}
+\end{center}	
 \begin{lstlisting}
     function openChannel(
         playerAddress,
         dealerAddress,
         playerBalance,
         dealerBalance,
-        openingBlock,
-        gameData,
-        RSAfingerprint,
-        gameContractAddress,
-        player_signed_message,
-        dealer_signed_message
-    )
 \end{lstlisting}
 \end{enumerate}
 \end{algorithm}
 \begin{algorithm}
+\begin{lstlisting}
+	     openingBlock,
+	     gameData,
+	     RSAfingerprint,
+	     gameContractAddress,
+	     player_signed_message,
+ 	     dealer_signed_message
+ 	   )
+\end{lstlisting}
 \begin{enumerate}
 \setcounter{enumi}{5}
 \item The contract verifies validity of the received data. If valid, it is assumed that the both parties approved channel opening. Then the contract generates $channelId$ and freezes funds of the both parties for the game. The channel status changes to $Open$. 
@@ -93,8 +95,8 @@ Let’s assume that Bob runs a casino. Alice wants to use Bob’s service to pla
 	$0xde8456...$\\
    	\end{tabular} &
    \begin{tabular}{l}
-   $\underrightarrow{\quad (0xde8456..., 100,
- 0x87ff5a..,0x8a4654...) \quad}$
+   $\underrightarrow{ \quad  (0xde8456..., 100,
+ 0x87ff5a...,\  \quad \quad \quad$ \\  $  \quad 0x8a4654...) \quad}$
    \end{tabular}&
   	 \begin{tabular}{c}
  	 Bob:\\
@@ -111,7 +113,7 @@ Bob analyzes the message and agrees to carry out a game. Bob allows the game con
 	$0xde8456...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underleftarrow{\quad (0xde8456...,  100, 0x87ff5a..., \quad $ \\  $ \quad 5000,  gameData,  openingBlock,\quad $ \\  $ \quad RSAfingerprint,0x8a4654.., Bob\_signature ) \quad}$
+   $\underleftarrow{\quad (0xde8456...,  100, 0x87ff5a..., 5000, \quad $ \\  $ \quad gameData,  openingBlock,\quad $ \\  $ \quad  RSAfingerprint, 0x8a4654...,\quad $ \\  $ \quad Bob\_signature ) \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -129,7 +131,7 @@ Alice checks the Bob’s message and, making sure it is valid, signs it on her p
 	$0xde8456...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underrightarrow{\quad (0xde8456...,  100, 0x87ff5a..., \quad $ \\  $ \quad 5000,  gameData,  openingBlock,\quad $ \\  $ \quad RSAfingerprint,0x8a4654.., Alice\_signature ) \quad}$
+   $\underrightarrow{\quad (0xde8456...,  100, 0x87ff5a..., 5000, \quad $ \\  $ \quad gameData,  openingBlock,\quad $ \\  $ \quad RSAfingerprint,0x8a4654...,\quad $ \\  $ \quad Alice\_signature ) \quad}$ 
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -145,7 +147,7 @@ Checking Alice’s signature for validity, Bob sends both their signatures to th
 	$0x87ff5a...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underrightarrow{\quad (0xde8456...,  100, 0x87ff5a..., \quad $ \\  $ \quad 5000,  gameData,  openingBlock,\quad $ \\  $ \quad RSAfingerprint,0x8a4654.., Bob\_signature, \quad $ \\  $ \quad Alice\_signature ) \quad}$
+   $\underrightarrow{\quad (0xde8456...,  100, 0x87ff5a...,5000, \quad $ \\  $ \quad  gameData,  openingBlock,\quad $ \\  $ \quad RSAfingerprint,0x8a4654...,\quad $ \\  $ \quad Bob\_signature,  Alice\_signature ) \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Contract:\\
@@ -190,21 +192,21 @@ $dealer\_signed\_message = ECDSA.Sign(update\_channel\_message)$
 \end{center}
 \item Then Dealer sends the following message:
 \begin{center}
- $message = (L,S, round, gameData, playerBalance, dealerBalance,dealer\_signed\_message)$
+ $message = (L,S, round, gameData, playerBalance, dealerBalance, $ \\ $dealer\_signed\_message)$
 \end{center}
  to Player.
 	\item Player makes sure that the number L, the game result and new participants' balances are calculated correctly.
-	\item Player sends the $update\_channel\_message$ and its signature back to Dealer. 
-\begin{center}
- $player\_signed\_message = ECDSA.Sign(update\_channel\_message)$
-\end{center}
 \end{enumerate}
 \end{algorithm}
 
 
 \begin{algorithm}
 \begin{enumerate}
-\setcounter{enumi}{6}
+\setcounter{enumi}{5}
+\item Player sends the $update\_channel\_message$ and its signature back to Dealer. 
+\begin{center}
+ $player\_signed\_message = ECDSA.Sign(update\_channel\_message)$
+\end{center}
  \item If the player or the dealer want to update the on-chain state of the game, they call the update channel function of the smart-contract:
 \begin{lstlisting}
     function updateChannel(
@@ -230,7 +232,7 @@ Getting back to the above example, Alice places her bet of 10 tokens on red, gen
 	$0xde8456...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underrightarrow{\quad (channelId, 10, 1, gameData, qw2ert5t,\quad $ \\  $ \quad Alice\_signature ) \quad}$
+   $\underrightarrow{\quad (channelId, 10, 1, gameData,\quad \quad \quad \ \ $ \\  $ \quad qw2ert5t, Alice\_signature ) \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -248,7 +250,7 @@ Upon the receipt of the Alice’s message, Bob starts computing the round result
 	$0xde8456...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underleftarrow{\quad (14, 0x5f43c..., 1, gameData, 110, 4990, Bob\_signature) \quad}$
+   $\underleftarrow{\quad (14, 0x5f43c..., 1, gameData,\quad \quad \quad \ \ \ $ \\  $ \quad 110, 4990, Bob\_signature) \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -367,11 +369,11 @@ $party1\_signed\_message = ECDSA.Sign(close\_message)$
         player_signed_message
     )
 \end{lstlisting}
-where $player_signed_message = ECDSA.Sign(channelId, round, \\ playerBalance, gameData, seed)$.
+where $player\_signed\_message = ECDSA.Sign(channelId, round, \\ playerBalance, gameData, seed)$.
 	\item The smart contract verifies data received from the participant; if valid, a dispute is open. The channel status changes to $Dispute$.
 	\item  Participants then have $t1$ time blocks to call $updateChannel$ to provide a newer valide state; Another function is  $doubleSign$ (only available to Dealer). The first function is followed by step 4.1 of the protocol, the second is followed by step 4.2.
 \begin{enumerate}
-	\item After checking data validity, $updateChannel$ compares the number of round where the dispute was open with the number of round in the updated state. If the difference is more than one, the dispute opener loses their deposit.  The channel is closed and removed (see items 6 an 7 for the \autoref{alg:close1} protocol). Otherwise the dispute is removed after the channel update, the channel state reverts back to $Open$. Note that it does not matter which party provides the channel update. label{upd}
+	\item After checking data validity, $updateChannel$ compares the number of round where the dispute was open with the number of round in the updated state. If the difference is more than one, the dispute opener loses their deposit.  The channel is closed and removed (see items 6 an 7 for the \autoref{alg:close1} protocol). Otherwise the dispute is removed after the channel update, the channel state reverts back to $Open$. Note that it does not matter which party provides the channel update. \label{upd}
 	\item When $doubleSign$ is called, the smart contract checks whether or not a player sent two different signed messages with the same round number. If so, Player loses all their deposit. The channel is closed and removed (see items 6 and 7 for the  \autoref{alg:close1} protocol). \label{dbl}
 \end{enumerate}
 \end{enumerate}
@@ -428,7 +430,7 @@ When the channel lifespan at round n came close to expiration, Bob decided to cl
 	$0xde8456...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underleftarrow{\quad (channelId, 85, 5015, 375, n) \ \ \ \  \ \  \quad}$
+   $\underleftarrow{\quad (channelId, 85, 5015, 375, n) \ \ \ \  \ \  \quad \quad \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -446,7 +448,7 @@ Alice checks the received message and sends the message with data required to cl
 	$0xde8456...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underrightarrow{\quad (channelId, 85, 5015, 375, n, true, \quad $ \\  $ \quad Alice\_signature ) \quad}$
+   $\underrightarrow{\quad (channelId, 85, 5015, 375, n, true, \quad \quad \quad $ \\  $ \quad Alice\_signature ) \quad \quad \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -464,7 +466,7 @@ Bob, in turn, checks the received data and, upon making sure these data is valid
 	$0x87ff5a...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underrightarrow{\quad (channelId, 85, 5015, 375, n,  true,\quad $ \\  $ \quad Bob\_signature,\quad $ \\  $ \quad Alice\_signature ) \quad}$
+   $\underrightarrow{\quad (channelId, 85, 5015, 375, n,  true,\quad \quad \quad $ \\  $ \quad Bob\_signature, Alice\_signature ) \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Contract:\\
@@ -505,7 +507,7 @@ Bob computes the result for Mallory. It is 20 black, Mallory loses his bet and B
 	$0xca62a232...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underleftarrow{\quad (20, 0x5ааа3c..., 1, gameData, 3, 502, Bob\_signature) \quad}$
+   $\underleftarrow{\quad (20, 0x5ааа3c..., 1, gameData, 3, 502,\quad \quad $ \\  $ \quad Bob\_signature) \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -523,7 +525,7 @@ Unhappy about the result, Mallory tries to send back to Bob a state with forged 
 	$0xca62a232...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underrightarrow{\quad (channelId, 7, 498, 1, gameData) \quad}$
+   $\underrightarrow{\quad (channelId, 7, 498, 1, gameData)\quad  \quad \ \ }$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
