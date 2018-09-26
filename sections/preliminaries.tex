@@ -35,7 +35,7 @@ A signature scheme $ \Sigma $ is called $unique$ if for every message $m \in M$ 
 In our protocols we use two types of signature schemes: RSA[] and ECDSA[]. ECDSA is a standard signature for transaction acknowledgement within the channel. RSA is reserved for pseudorandom number generation in Signidice algorithm.
 
 \begin{remark}
-RSA can be replaced by any other signature with the property of uniqueness. We suggest considering BLS [] as the first choice alternative.
+RSA can be replaced by any other signature with the property of uniqueness. We suggest considering BLS \cite{bib10} as the first choice alternative.
 \end{remark}
 
 When a channel is open, the smart contract only stores \textit {Merkle-tree fingerprint} not the entire RSA public key. The purpose is to reduce channel opening transaction cost.

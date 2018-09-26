@@ -30,8 +30,11 @@ maxNumber, minNumber & uint256 & Boundaries of random numbers in the game\\
 \end{table}
 
 \subsection {Opening a channel}
-Player initiates the channel open event. To open a channel, its participants have to agree upon a specific initial state and confirm it with their signatures. Then the transaction with a state and participant signatures is sent to the smart-contract that verifies data validity. The smart-contract calculates a unique channel ID generated according to the following formula:\\
- $channelId = H(gameContractAddress, playerAddress,dealerAddress, playerBalance, $ \\ $ dealerBalance, openingBlock, RSAfingerprint)$. Note that either participant may send the opening transaction. For simplicity, let’s assume that it is sent by Dealer. The message exchange sequence is specified in the  \autoref {alg:openchannel} protocol.
+Player initiates the channel open event. To open a channel, its participants have to agree upon a specific initial state and confirm it with their signatures. Then the transaction with a state and participant signatures is sent to the smart-contract that verifies data validity. The smart-contract calculates a unique channel ID generated according to the following formula:
+\begin{center}
+ $channelId = H(gameContractAddress, playerAddress,dealerAddress, playerBalance, $ \\ $ dealerBalance, openingBlock, RSAfingerprint)$.
+\end{center}
+ Note that either participant may send the opening transaction. For simplicity, let’s assume that it is sent by Dealer. The message exchange sequence is specified in the  \autoref {alg:openchannel} protocol.
 
 \begin{algorithm}
 \floatname{algorithm}{Protocol}
