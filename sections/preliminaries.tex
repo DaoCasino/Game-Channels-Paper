@@ -11,7 +11,7 @@ Liveness of game channels assures a granted result for each channel participants
 
 Safety of game channels also relies on the safety of blockchain. It assures that all game channel participants obtain a valid and identical result. Analyzing intra-channel activities, we can suggest a case when a participant does not respond to messages sent to him via the channel. There is no telling whether an actual network failure occurred or a participant deliberately gives no response. As far as state channels are concerned, the participant availability issue is expected to be resolved through implementing some procedure for obtaining a valid result even when one of the participants is unavailable. In game channels the relevant functions are integrated into the smart-contract responsible for dispute resolution and is authorized to decide over reward distribution in compliance with the game logic. Note that a new round can only be started after all the parties agreed upon the previous one. Thus, in worst case one player will be in the n+1 state, the other in the n state. And, as long as the first player fails to send a state update, the dispute is resolved in favor of the second player with maximum reward going to their account.
 
-\textit {Griefing} is the ability of a participant to deviate from the protocol in order to disrupt participant interaction without directly violating the protocol security.[] There are two griefing strategies. One implies forcing a party into paying the channel closure transaction; to do it, a party that was supposed to close the channel does not send the transaction to blockchain. It is not a major issue, as state deposits considerably exceed transaction costs, and participants are likely to assume this risk. The other strategy implies posting expired channel states during a dispute if an attacking party believes that the other participant is unavailable. To eliminate this risk, a game channel checks the game round number when there is a state change attempt in a dispute; if the difference between the round number of the new state and the round number suggested by an attacker exceeds 1, the attacker loses their deposit.
+\textit {Griefing} is the ability of a participant to deviate from the protocol in order to disrupt participant interaction without directly violating the protocol security. There are two griefing strategies. One implies forcing a party into paying the channel closure transaction; to do it, a party that was supposed to close the channel does not send the transaction to blockchain. It is not a major issue, as state deposits considerably exceed transaction costs, and participants are likely to assume this risk. The other strategy implies posting expired channel states during a dispute if an attacking party believes that the other participant is unavailable. To eliminate this risk, a game channel checks the game round number when there is a state change attempt in a dispute; if the difference between the round number of the new state and the round number suggested by an attacker exceeds 1, the attacker loses their deposit.
 
 It is noteworthy that an incorrect implementation of game channels and software errors can cause one or all players to entirely lose their deposits. However this issue is out of the scope of the present work.
 
@@ -32,7 +32,7 @@ In addition define the uniqueness property for a signature scheme.
 A signature scheme $ \Sigma $ is called $unique$ if for every message $m \in M$ and for every public key $pk \in K$ is only one valid signature $\sigma \in S$.
 \end{defn}
 
-In our protocols we use two types of signature schemes: RSA[] and ECDSA[]. ECDSA is a standard signature for transaction acknowledgement within the channel. RSA is reserved for pseudorandom number generation in Signidice algorithm.
+In our protocols we use two types of signature schemes: RSA \cite{bib19} and ECDSA \cite{bib20}. ECDSA is a standard signature for transaction acknowledgement within the channel. RSA is reserved for pseudorandom number generation in Signidice algorithm.
 
 \begin{remark}
 RSA can be replaced by any other signature with the property of uniqueness. We suggest considering BLS \cite{bib10} as the first choice alternative.
@@ -44,12 +44,12 @@ When a channel is open, the smart contract only stores \textit {Merkle-tree fing
 Let $pk = (N, e)$ be a RSA public key. Then $f = H(H(e), H(N))$ is a Merkle-tree fingerprint of the RSA public key $pk$. 
 \end{defn}
 \begin{remark}
-In DAO.Casino implementation $KECCAK-256$[] is always used for $H$ function to ensure compatibility with Ethereum. 
+In DAO.Casino implementation $KECCAK-256$ \cite{bib21} is always used for $H$ function to ensure compatibility with Ethereum. 
 \end{remark}
 
 	\subsection{Signidice}
 
-Signidice[] - is a protocol that allows pseudorandom number generation by two parties. 
+Signidice \cite{bib18} - is a protocol that allows pseudorandom number generation by two parties. 
 
 Define the bit hash length as $hash.size$, and the maximum and the minimum numbers the generation can yield as $max$ and $ min$ respectively.
 
