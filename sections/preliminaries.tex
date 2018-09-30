@@ -23,8 +23,8 @@ A signature scheme $ \Sigma $ is a tuple $(M, S, K, KeyGen, Sign, Verify)$ where
 		\item $ S $ is a finite field of possible signatures;
 		\item $ K $ is a finite field of possible keys;
 		\item $ KeyGen: (1^k) \rightarrow (sk, pk) $. This algorithm takes as input a security parameter $k$ and outputs secret and public keys;
-		\item $Sign: (m, sk) \rightarrow \sigma $. The signing algorithm that takes as input a message $m \in M$ and secret key $sk \in K$, and outputs a signature $\sigma \in S$;
-	\item $Verify: (m, \sigma, pk) \rightarrow \{0, 1\} $. This algorithm check whether the signature $\sigma \in S$ for a message $m \in M$ and a public key $pk \in K$ is valid.
+		\item $Sign_{sk}: (m) \rightarrow \sigma $. The signing algorithm that takes as input a message $m \in M$ and secret key $sk \in K$, and outputs a signature $\sigma \in S$;
+	\item $Verify_{pk}: (m, \sigma) \rightarrow \{0, 1\} $. This algorithm check whether the signature $\sigma \in S$ for a message $m \in M$ and a public key $pk \in K$ is valid.
 	\end{itemize}
 \end{defn}
 In addition define the uniqueness property for a signature scheme. 
@@ -60,7 +60,7 @@ Define the bit hash length as $hash.size$, and the maximum and the minimum numbe
 \State 1. $ Alice \ \text{send}\  seed\xleftarrow{\text{R}} \{0,1\}^* \  \ \text{to} \ Bob$
 \State 2. Bob compute:
 \State $\ \ \ \ h \gets H(seed)$
-\State $\ \ \ \ S \gets  \Sigma . Sign(h)$
+\State $\ \ \ \ S \gets  \Sigma . Sign_d(h)$
 \State $\ \ \ \ L \gets H(S) $
 \State $\ \ \ \ range \gets max - min +1$
 \While {$L \geq \left\lfloor 2^{hash.size}-1 / (range)\right\rfloor \cdot (range) $}
@@ -69,7 +69,7 @@ Define the bit hash length as $hash.size$, and the maximum and the minimum numbe
 \State $ \ \ \ \  L \gets (L \bmod range) + min $
 \State 3. $Bob \ \text{send}\  S, \ L \ \   \text{to} \ Alice$
 \State 4. Alice check results:
-\If {$ \Sigma .Verify(S) \ \text{and} \  L \ \text{is correct}$}  
+\If {$ \Sigma .Verify_e(S) \ \text{and} \  L \ \text{is correct}$}  
 \State The number L accepted
 \Else 
 \State The number L not accepted
@@ -83,8 +83,8 @@ If  $max -  min$  results in a power of two, while-loop at step 2 of Signidice a
 
 In DAO.Casino implementation RSA unique signature is represented by $Sign$ and $Verify$ functions:
 \begin{itemize}
-	\item $RSA.Sign(m): \mathbb{Z}_n \rightarrow \mathbb{Z}_n: m \rightarrow m^d mod N$
-	\item $RSA.Verify(m, s): \mathbb{Z}_n \times \mathbb{Z}_n \rightarrow \{True, False\}: (m, s) \rightarrow \text{check if } \\ s^e mod N == m $
+	\item $RSA.Sign_d(m): \mathbb{Z}_n \rightarrow \mathbb{Z}_n: m \rightarrow m^d mod N$
+	\item $RSA.Verify_e(m, s): \mathbb{Z}_n \times \mathbb{Z}_n \rightarrow \{True, False\}: (m, s) \rightarrow \text{check if } \\ s^e mod N == m $
 \end{itemize}
 
 	\subsection{Channels}
@@ -123,7 +123,7 @@ We say that a connection between two parties is called a \textit {Сhannel} if t
 
 Each channel has a $state$. The channel state is the last message sent by a participant that unambiguously defines the latest game state and/or participants balance. Note that each protocol participant must store the latest channel state. 
 
-Also each channel has the  $livetime$ parameter. $Livetime$ defines the number of blockchain blocks available to GCCS to update the channel state and open disputes related to this state. 
+Also each channel has the  $lifetime$ parameter. $Lifetime$ defines the number of blockchain blocks available to GCCS to update the channel state and open disputes related to this state. 
 
 Define channel participants as: $ Player $ and $Dealer$. The table below defines core functionality differences between these roles:
 \begin{center}
@@ -139,11 +139,11 @@ Define channel participants as: $ Player $ and $Dealer$. The table below defines
 \end{center}
 Other differences depend on specific protocol implementation.
 
-To coordinate different actions within the channel, GCCS must be able to recognize action approvals from both parties. If a channel state signed by the player and by the dealer is received, GCCS considers that participants reached consensus. And note that the sender does not matter in this case. To reduce transaction costs, receiving one signature may suffice if the transaction itself is sent by the other party (i.e. approval is confirmed by sending).  
+To coordinate different actions within the channel, GCCS must be able to recognize action approvals from both parties. If a channel state signed by Player and by Dealer is received, GCCS considers that participants reached consensus. And note that the sender does not matter in this case. To reduce transaction costs, receiving one signature may suffice if the transaction itself is sent by the other party (i.e. approval is confirmed by sending).  
 
 \textit {Channel Status} is a global variable defining the current channel status; the following statuses exist:
 \begin{itemize}
-	\item $Unused$ - channel not open yet;
+	\item $Unused$ - channel wasn't opened before;
 	\item $Open$ - channel open, game in progress;
 	\item $Close$ - channel was used and closed now;
 	\item $Dispute$ - channel open, dispute in progress.
