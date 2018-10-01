@@ -2,7 +2,7 @@
 In this section we introduce some modifications to the basic protocol. First, we are going to cover conversion of our gamechannel to the version without the Dealer role with two equal players. The other modification allows connecting to the channel a third party that will not directly participate in the game but will get published channel states with participant signatures. 
 
 \subsection{Two Players Case}
-Some games (e.g., some dice variations) involve two equal players, and a casino takes no part in the process. The original protocol version covered in the \nameref{gamechannel} section, implies that one of the participants is responsible for random number generation and has to ensure a more stable connection than the other. This also allows Player to force Dealer into playing an additional round before the channel closes. To make channel participants equal, we suggest a protocol version, based on the  \textit {Threshold Signature Scheme} \cite{bib22}. Obviously, the threshold signature must have the property of uniqueness (e.g. TBLS or TRSA \cite{bib23} signatures).
+Some games (e.g., some dice variations) involve two equal players, and a casino takes no part in the process. The original protocol version covered in the \nameref{gamechannel} section can be used for these purposes. But for completeness, we want to suggest a protocol version, based on the  \textit {Threshold Signature Scheme} \cite{bib22}. Obviously, the threshold signature must have the property of uniqueness (e.g. TBLS or TRSA \cite{bib23} signatures).
 
 Let’s redeclare the Player role as $Player1$, and the Dealer role as $Player2$. For the two player scenario an altered version of the \autoref{alg:openchannel} protocol is applied to open the channel. The RSA signature is replaced with the selected threshold signature scheme $ \tau $ with the $\tau.PartSign()$ algorithm. This algorithm takes as input a message m and outputs a  participant partial signature of the message. Item 2 is replaced with the DKG protocol that allows each party to have a part of the private key and a shared public key. Just like in the original protocol, the channel state changes to $Open$ when the channel receives two valid participant signatures. 
 
@@ -44,7 +44,7 @@ $signed\_seed\_message = ECDSA.Sign(seed\_message)$
 \setcounter{enumi}{5}
  \item Players exchange obtained game results and verify the data. 
 \begin{center}
- $message = (channelId, round, gameData, player1Balance, player2Balance)$
+ $message = (channelId, player1Balance, player2Balance, gameData, round)$
  $signed\_message = ECDSA.Sign(message)$
 \end{center}
 \item If needed, either player may use the two signatures of the result message to update the channel state.
@@ -52,6 +52,8 @@ $signed\_seed\_message = ECDSA.Sign(seed\_message)$
 \end{algorithm}
 
 To close a channel, same methods are used as specified in \autoref{closing}. The protocols covered in that section are compatible with this modification with minor alteration. Now bet is considered made once both participants posted their seeds. Also the  $resolveDispute$ and $doubleSign$ functions are available to either participants. (see the \ref{block} item for protocol 6). 
+
+Note that our Two players Modification is covered for information purposes only. We recommed using the original version (with additional step for Dealer's bet), as it have same security level, but it is more efficient in terms of speed.
 
 \subsection{Third Party Observer}
 
