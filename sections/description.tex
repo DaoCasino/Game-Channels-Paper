@@ -3,7 +3,7 @@ In this section we are going to give a detailed coverage of protocols that allow
 
 \begin{table}[h]
 
-\caption{The names of variables and their meanings}
+\caption{The names of variables and their meanings \\ (Solidity implementation)}
 % \rowcolors{1}{lightgray}{white}
 \begin{tabular}{|l|c|l|}
 \hline
@@ -32,7 +32,7 @@ maxNumber, minNumber & uint256 & Boundaries of random numbers in the game\\
 \subsection {Opening a channel}
 Player initiates the channel open event. To open a channel, its participants have to agree upon a specific initial state and confirm it with their signatures. Then the transaction with a state and participant signatures is sent to the smart-contract that verifies data validity. The smart-contract calculates a unique channel ID generated according to the following formula:
 \begin{center}
- $channelId = H(gameContractAddress, playerAddress,dealerAddress, playerBalance, $ \\ $ dealerBalance, openingBlock, RSAfingerprint)$.
+ $channelId = H(gameContractAddress, playerAddress, dealerAddress, $ \\ $playerBalance, dealerBalance, openingBlock, RSAfingerprint)$.
 \end{center}
  Note that either participant may send the opening transaction. For simplicity, let’s assume that it is sent by Dealer. The message exchange sequence is specified in the  \autoref {alg:openchannel} protocol.
 
@@ -46,7 +46,8 @@ Player initiates the channel open event. To open a channel, its participants hav
 \end{center}
 	\item Dealer generates the public RSA key $RSA\_public\_key= (N,e)$ and calculates the $RSAfingerprint$. Then, Dealer generates the following messages:
 \begin{center}
-	 $open\_message = (playerAddress,  dealerAddress, playerBalance, dealerBalance,$\\$openingBlock, gameData, RSAfingerprint, gameContractAddress)$
+	 $open\_message = (playerAddress,  dealerAddress, playerBalance, $\\$dealerBalance, openingBlock, gameData, RSAfingerprint, gameContractAddress)$
+
 	$dealer\_signed\_message = ECDSA.Sign(open\_message)$
 \end{center}
 	\item Dealer sends the following data to Player:
@@ -67,12 +68,12 @@ $(open\_message,dealer\_signed\_message,player\_signed\_message)$
         dealerAddress,
         playerBalance,
         dealerBalance,
+        openingBlock,
 \end{lstlisting}
 \end{enumerate}
 \end{algorithm}
 \begin{algorithm}
 \begin{lstlisting}
-	     openingBlock,
 	     gameData,
 	     RSAfingerprint,
 	     gameContractAddress,
@@ -89,7 +90,7 @@ $(open\_message,dealer\_signed\_message,player\_signed\_message)$
 \theoremstyle{definition}
 \newtheorem{exmp}{Example}[section]
 \begin{exmp}
-Let’s assume that Bob runs a casino. Alice wants to use Bob’s service to play roulette available in the list of games. First Alice allows the game contract to transfer100 of Alice's tokens to later use them as a deposit. Then she sends the following message to Bob:
+Let’s assume that Bob runs a casino. Alice wants to use Bob’s service to play roulette available in the list of games. First Alice allows the game contract to transfer 100 of Alice's tokens to later use them as a deposit. Then she sends the following message to Bob:
 \\
 \\
 \begin{tabular}{ccc}
@@ -116,7 +117,7 @@ Bob analyzes the message and agrees to carry out a game. Bob allows the game con
 	$0xde8456...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underleftarrow{\quad (0xde8456...,  100, 0x87ff5a..., 5000, \quad $ \\  $ \quad gameData,  openingBlock,\quad $ \\  $ \quad  RSAfingerprint, 0x8a4654...,\quad $ \\  $ \quad Bob\_signature ) \quad}$
+   $\underleftarrow{\quad (N, e, 0xde8456..., 0x87ff5a..., 100, \ \quad $ \\  $ \quad 5000, openingBlock, gameData,\quad $ \\  $ \quad  RSAfingerprint, 0x8a4654...,\quad $ \\  $ \quad Bob\_signature ) \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -134,7 +135,7 @@ Alice checks the Bob’s message and, making sure it is valid, signs it on her p
 	$0xde8456...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underrightarrow{\quad (0xde8456...,  100, 0x87ff5a..., 5000, \quad $ \\  $ \quad gameData,  openingBlock,\quad $ \\  $ \quad RSAfingerprint,0x8a4654...,\quad $ \\  $ \quad Alice\_signature ) \quad}$ 
+   $\underrightarrow{\quad (0xde8456..., 0x87ff5a..., 100, 5000, \quad $ \\  $ \quad openingBlock, gameData, \quad $ \\  $ \quad RSAfingerprint,0x8a4654...,\quad $ \\  $ \quad Alice\_signature ) \quad}$ 
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -150,7 +151,7 @@ Checking Alice’s signature for validity, Bob sends both their signatures to th
 	$0x87ff5a...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underrightarrow{\quad (0xde8456...,  100, 0x87ff5a...,5000, \quad $ \\  $ \quad  gameData,  openingBlock,\quad $ \\  $ \quad RSAfingerprint,0x8a4654...,\quad $ \\  $ \quad Bob\_signature,  Alice\_signature ) \quad}$
+   $\underrightarrow{\quad (0xde8456..., 0x87ff5a..., 100, 5000, \quad $ \\  $ \quad  openingBlock, gameData, \quad $ \\  $ \quad RSAfingerprint,0x8a4654...,\quad $ \\  $ \quad Bob\_signature,  Alice\_signature ) \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Contract:\\
@@ -190,14 +191,13 @@ $signed\_seed\_message = ECDSA.Sign(seed\_message)$
  Applying the game logic to the resulting number, Dealer obtains the round result.
 \item Dealer signs the new channel state
 \begin{center}
-$update\_channel\_message = H(channelId, playerBalance, dealerBalance, round, gameData)$
+$update\_channel\_message = (channelId, playerBalance, dealerBalance, gameData, round)$
 $dealer\_signed\_message = ECDSA.Sign(update\_channel\_message)$
 \end{center}
-\item Then Dealer sends the following message:
+\item Then Dealer sends the following message to Player:
 \begin{center}
- $message = (L,S, round, gameData, playerBalance, dealerBalance, $ \\ $dealer\_signed\_message)$
+ $message = (L,S, update\_channel\_message, $ \\ $dealer\_signed\_message)$
 \end{center}
- to Player.
 	\item Player makes sure that the number L, the game result and new participants' balances are calculated correctly.
 \end{enumerate}
 \end{algorithm}
@@ -213,13 +213,13 @@ $dealer\_signed\_message = ECDSA.Sign(update\_channel\_message)$
  \item If the player or the dealer want to update the on-chain state of the game, they call the update channel function of the smart-contract:
 \begin{lstlisting}
     function updateChannel(
-        channelId ,
-        playerBalance,
-        dealerBalance,
-        totalBet,
-        round,
-        player_signed_message,
-        dealer_signed_message
+	channelId ,
+	playerBalance,
+	dealerBalance,
+	gameData,
+	round,
+	player_signed_message,
+	dealer_signed_message
     )
 \end{lstlisting}
 \end{enumerate}
@@ -244,7 +244,8 @@ Getting back to the above example, Alice places her bet of 10 tokens on red, gen
 \end{tabular}\\
 \\
 
-Upon the receipt of the Alice’s message, Bob starts computing the round result. To do it, he calculates hash from Alice’s data and signs it via RSA. The result is $0x5r43c...$ Then, on the basis of the obtained number, Bob generates a random number that determines the game result. Let’s assume this number is 14. It is on the red. So, Alice wins the round. Bob generates a message for Alice and signs it:
+Upon the receipt of the Alice’s message, Bob starts computing the round result. To do it, he calculates hash from Alice’s data and signs it via RSA signature. The result is $0x5r43c...$ Then, on the basis of the obtained number, Bob generates a random number that determines the game result. Let’s assume this number is 14. It is on the red. So, Alice wins the round. Bob generates a message for Alice and signs it:
+$update\_channel\_message = (channelId, playerBalance, dealerBalance, gameData, round)$
 \\
 \\
 \begin{tabular}{ccc}
@@ -253,7 +254,7 @@ Upon the receipt of the Alice’s message, Bob starts computing the round result
 	$0xde8456...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underleftarrow{\quad (14, 0x5f43c..., 1, gameData,\quad \quad \quad \ \ \ $ \\  $ \quad 110, 4990, Bob\_signature) \quad}$
+   $\underleftarrow{\quad (14, 0x5f43c..., channelId, 110, \quad \quad \quad $ \\  $ \quad 4990, gameData, 1, Bob\_signature) \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -271,7 +272,7 @@ Alice approves the received data upon checking it. She signs the message and sen
 	$0xde8456...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underrightarrow{\quad (channelId, 110, 4990, 1, gameData, \quad $ \\  $ \quad Alice\_signature  ) \quad}$
+   $\underrightarrow{\quad (channelId, 110, 4990, gameData, 1, \quad $ \\  $ \quad Alice\_signature  ) \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
