@@ -1,6 +1,8 @@
 \section{Game Channels} \label{gamechannel}
 In this section we are going to give a detailed coverage of protocols that allow two parties to open a game channel, play a game, close the channel and get rewards facing no risk of counterparty fraud. Also, we are going to consider the dispute resolution mechanism.
 
+By $dk$ and $pk$ denote, respectively, Dealer's and Player's ECDSA keys. 
+
 \begin{table}[h]
 
 \caption{The names of variables and their meanings \\ (Solidity implementation)}
@@ -48,7 +50,7 @@ Player initiates the channel open event. To open a channel, its participants hav
 \begin{center}
 	 $open\_message = (playerAddress,  dealerAddress, playerBalance, $\\$dealerBalance, openingBlock, gameData, RSAfingerprint, gameContractAddress)$
 
-	$dealer\_signed\_message = ECDSA.Sign(open\_message)$
+	$dealer\_signed\_message = ECDSA.Sign_{dk}(open\_message)$
 \end{center}
 	\item Dealer sends the following data to Player:
 \begin{center}
@@ -56,7 +58,7 @@ $(RSA\_public\_key, open\_message,dealer\_signed\_message)$
 \end{center}
 	\item Player receives the message, checks data in it and then signs the $open\_message$ and sends it back to Dealer.
 \begin{center}
-	$player\_signed\_message = ECDSA.Sign(open\_message)$
+	$player\_signed\_message = ECDSA.Sign_{pk}(open\_message)$
 \end{center}
 \item If the $player\_signed\_message$ is valid, Dealer calls the $openChannel$ smart contract function with the following data:
 \begin{center}
@@ -174,7 +176,7 @@ Once the channel is open, the whole gambling process is divided into rounds. In 
 	\item Player generates the $seed$ and the following  messages:
 \begin{center}
 $ seed\_message = (channelId, bet, round, gameData, seed)$
-$signed\_seed\_message = ECDSA.Sign(seed\_message)$ 
+$signed\_seed\_message = ECDSA.Sign_{pk}(seed\_message)$ 
 \end{center}
  then sends data to Dealer. 
 	\item Dealer checks the $signed\_seed\_message$, $seed\_message$ and computes:
@@ -192,7 +194,7 @@ $signed\_seed\_message = ECDSA.Sign(seed\_message)$
 \item Dealer signs the new channel state
 \begin{center}
 $update\_channel\_message = (channelId, playerBalance, dealerBalance, gameData, round)$
-$dealer\_signed\_message = ECDSA.Sign(update\_channel\_message)$
+$dealer\_signed\_message = ECDSA.Sign_{dk}(update\_channel\_message)$
 \end{center}
 \item Then Dealer sends the following message to Player:
 \begin{center}
@@ -208,7 +210,7 @@ $dealer\_signed\_message = ECDSA.Sign(update\_channel\_message)$
 \setcounter{enumi}{5}
 \item Player sends the $update\_channel\_message$ and its signature back to Dealer. 
 \begin{center}
- $player\_signed\_message = ECDSA.Sign(update\_channel\_message)$
+ $player\_signed\_message = ECDSA.Sign_{pk}(update\_channel\_message)$
 \end{center}
  \item If the player or the dealer want to update the on-chain state of the game, they call the update channel function of the smart-contract:
 \begin{lstlisting}
@@ -224,6 +226,8 @@ $dealer\_signed\_message = ECDSA.Sign(update\_channel\_message)$
 \end{lstlisting}
 \end{enumerate}
 \end{algorithm}
+
+Note that, every time a channel state is updated, game-related-data is also recorded to the blockchain. It allows us to maintain necessary game-related statistics and to distribute rewards between the casino and the game developer according to actual bets.
 
 \begin{exmp}
 Getting back to the above example, Alice places her bet of 10 tokens on red, generates the relevant message and signs it: 
@@ -303,11 +307,11 @@ If either party wants to close the channel they initiate the relevant query. The
 \begin{enumerate}
 	\item A party willing to close channel sends their current round state to the other participant.
 \begin{center}
-$message = (channelId, playerBalance, dealerBalance, totalBet, round)$
+$message = (channelId, playerBalance, dealerBalance, gameData, round)$
 \end{center} 
 	\item If the other participant accepts this state, this participant returns the following message with a signature:
 \begin{center}
-$close\_message = (channelId, playerBalance, dealerBalance, totalBet, round, flag)$\\
+$close\_message = (channelId, playerBalance, dealerBalance, gameData, round, flag)$\\
 $party2\_signed\_message = ECDSA.Sign(close\_message)$
 \end{center}
 	\item The first party then validates the received message, and, if approved, signs the $close\_message$ as well.
@@ -320,7 +324,7 @@ $party1\_signed\_message = ECDSA.Sign(close\_message)$
         channelId,
         playerBalance,
         dealerBalance,
-        totalBet,
+        gameData,
         round,
         party1_signed_message,
         party2_signed_message 
@@ -373,7 +377,7 @@ $party1\_signed\_message = ECDSA.Sign(close\_message)$
         player_signed_message
     )
 \end{lstlisting}
-where $player\_signed\_message = ECDSA.Sign(channelId, round, \\ playerBalance, gameData, seed)$.
+where $player\_signed\_message = ECDSA.Sign_{pk}(channelId, round, \\ playerBalance, gameData, seed)$.
 	\item The smart contract verifies data received from the participant; if valid, a dispute is open. The channel status changes to $Dispute$.
 	\item  Participants then have $t1$ time blocks to call $updateChannel$ to provide a newer valide state; Another function is  $doubleSign$ (only available to Dealer). The first function is followed by step 4.1 of the protocol, the second is followed by step 4.2.
 \begin{enumerate}
@@ -434,7 +438,7 @@ When the channel lifespan at round n came close to expiration, Bob decided to cl
 	$0xde8456...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underleftarrow{\quad (channelId, 85, 5015, 375, n) \ \ \ \  \ \  \quad \quad \quad}$
+   $\underleftarrow{\quad (channelId, 85, 5015, gameData, n) \ \ \ \  \ \  \quad \quad \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -452,7 +456,7 @@ Alice checks the received message and sends the message with data required to cl
 	$0xde8456...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underrightarrow{\quad (channelId, 85, 5015, 375, n, true, \quad \quad \quad $ \\  $ \quad Alice\_signature ) \quad \quad \quad}$
+   $\underrightarrow{\quad (channelId, 85, 5015, gameData, n, true, \quad \quad \quad $ \\  $ \quad Alice\_signature ) \quad \quad \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -470,7 +474,7 @@ Bob, in turn, checks the received data and, upon making sure these data is valid
 	$0x87ff5a...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underrightarrow{\quad (channelId, 85, 5015, 375, n,  true,\quad \quad \quad $ \\  $ \quad Bob\_signature, Alice\_signature ) \quad}$
+   $\underrightarrow{\quad (channelId, 85, 5015, gameData, n,  true,\quad \quad \quad $ \\  $ \quad Bob\_signature, Alice\_signature ) \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Contract:\\
@@ -511,7 +515,7 @@ Bob computes the result for Mallory. It is 20 black, Mallory loses his bet and B
 	$0xca62a232...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underleftarrow{\quad (20, 0x5ааа3c..., 1, gameData, 3, 502,\quad \quad $ \\  $ \quad Bob\_signature) \quad}$
+   $\underleftarrow{\quad (20, 0x5ааа3c..., channelId, 3, 502, gameData, 1,\quad \quad $ \\  $ \quad Bob\_signature) \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -529,7 +533,7 @@ Unhappy about the result, Mallory tries to send back to Bob a state with forged 
 	$0xca62a232...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underrightarrow{\quad (channelId, 7, 498, 1, gameData)\quad  \quad \ \ }$
+   $\underrightarrow{\quad (channelId, 7, 498, gameData, 1,\quad $\\$ \quad Malory\_signature)\quad  \quad \ \ }$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
