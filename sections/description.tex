@@ -79,8 +79,8 @@ $(open\_message,dealer\_signed\_message,player\_signed\_message)$
 	     gameData,
 	     RSAfingerprint,
 	     gameContractAddress,
-	     player_signed_message,
- 	     dealer_signed_message
+	     dealer_signed_message,
+	     player_signed_message
  	   )
 \end{lstlisting}
 \begin{enumerate}
@@ -220,8 +220,8 @@ $dealer\_signed\_message = ECDSA.Sign_{dk}(update\_channel\_message)$
 	dealerBalance,
 	gameData,
 	round,
-	player_signed_message,
-	dealer_signed_message
+	dealer_signed_message,
+	player_signed_message
     )
 \end{lstlisting}
 \end{enumerate}
@@ -301,7 +301,7 @@ If either party wants to close the channel they initiate the relevant query. The
 	\item  Data forgery by either participant. If an attempt to upload forged data to the channel is detected, the contract returns an error message. Thus invalid data cannot get to blockchain and can only be locally stored by participants.When either player suspects the other of fraud, the \autoref{alg:close4} protocol is applied. Note that for the smart contract this case is similar to the previous one as far as contract logic implementation is concerned.
 \end{enumerate}
 
-\begin{algorithm}
+\begin{algorithm}[H]
 \floatname{algorithm}{Protocol}
 \caption{Consented channel close} \label{alg:close1}
 \begin{enumerate}
@@ -318,6 +318,12 @@ $party2\_signed\_message = ECDSA.Sign(close\_message)$
 \begin{center}
 $party1\_signed\_message = ECDSA.Sign(close\_message)$
 \end{center}
+\end{enumerate}
+\end{algorithm}
+
+\begin{algorithm}
+\begin{enumerate}
+\setcounter{enumi}{3}
 	\item Dealer holding the $party1\_signed\_message$ and $party2\_signed\_message$, sends them to the contract with the $close\_message$. \label{deal_sig}
 \begin{lstlisting}
     function closeByConsent(
@@ -331,18 +337,12 @@ $party1\_signed\_message = ECDSA.Sign(close\_message)$
     )
 \end{lstlisting}
 	\item The contract validates received signatures. Then makes sure that amounts frozen in the contract equal tokens that the player and the dealer intend to withdraw.
-\end{enumerate}
-\end{algorithm}
-
-\begin{algorithm}
-\begin{enumerate}
-\setcounter{enumi}{5}
 	\item If all the conditions are met, the contract initiates the $closeChannel(channelId)$ function and distributes tokens between parties according to the received data.
 	\item The contract then deletes the channel via the $removeChannel(channelId)$ function. The contract changes the channels status to $Close$.
 \end{enumerate}
 \end{algorithm}
 
-\begin{algorithm}
+\begin{algorithm}[H]
 \floatname{algorithm}{Protocol}
 \caption{Low balance channel closure} \label{alg:close2}
 \begin{enumerate}
@@ -351,7 +351,7 @@ $party1\_signed\_message = ECDSA.Sign(close\_message)$
 \end{enumerate}
 \end{algorithm}
 
-\begin{algorithm}
+\begin{algorithm}[H]
 \floatname{algorithm}{Protocol}
 \caption{Expiration closer} \label{alg:close3}
  \begin{enumerate}
@@ -361,7 +361,7 @@ $party1\_signed\_message = ECDSA.Sign(close\_message)$
 \end{enumerate}
 \end{algorithm}
 
-\begin{algorithm}
+\begin{algorithm}[H]
 \floatname{algorithm}{Protocol}
 \caption{Nonresponse/data forgery closery} \label{alg:close4}
 \begin{enumerate}
@@ -380,15 +380,16 @@ $party1\_signed\_message = ECDSA.Sign(close\_message)$
 where $player\_signed\_message = ECDSA.Sign_{pk}(channelId, round, \\ playerBalance, gameData, seed)$.
 	\item The smart contract verifies data received from the participant; if valid, a dispute is open. The channel status changes to $Dispute$.
 	\item  Participants then have $t1$ time blocks to call $updateChannel$ to provide a newer valide state; Another function is  $doubleSign$ (only available to Dealer). The first function is followed by step 4.1 of the protocol, the second is followed by step 4.2.
-\begin{enumerate}
-	\item After checking data validity, $updateChannel$ compares the number of round where the dispute was open with the number of round in the updated state. If the difference is more than one, the dispute opener loses their deposit.  The channel is closed and removed (see items 6 an 7 for the \autoref{alg:close1} protocol). Otherwise the dispute is removed after the channel update, the channel state reverts back to $Open$. Note that it does not matter which party provides the channel update. \label{upd}
-	\item When $doubleSign$ is called, the smart contract checks whether or not a player sent two different signed messages with the same round number. If so, Player loses all their deposit. The channel is closed and removed (see items 6 and 7 for the  \autoref{alg:close1} protocol). \label{dbl}
-\end{enumerate}
 \end{enumerate}
 \end{algorithm}
 \begin{algorithm}
 \begin{enumerate}
 	\setcounter{enumi}{4}
+\item[]
+\begin{enumerate}
+	\item After checking data validity, $updateChannel$ compares the number of round where the dispute was open with the number of round in the updated state. If the difference is more than one, the dispute opener loses their deposit.  The channel is closed and removed (see items 6 an 7 for the \autoref{alg:close1} protocol). Otherwise the dispute is removed after the channel update, the channel state reverts back to $Open$. Note that it does not matter which party provides the channel update. \label{upd}
+	\item When $doubleSign$ is called, the smart contract checks whether or not a player sent two different signed messages with the same round number. If so, Player loses all their deposit. The channel is closed and removed (see items 6 and 7 for the  \autoref{alg:close1} protocol). \label{dbl}
+\end{enumerate}
 	\item After the $t1$ time blocks end the $t2$ time window opens allowing parties to update the channel state or call the  $doubleSign$ function; otherwise Dealer can call the $resolveDispute$ function from the contract. If none of the options is selected for the allocated $t1+t2$ time span, the \autoref{alg:close3} protocol applies. In this case no additional steps follow. \label{block}
 \begin{lstlisting}
 function resolveDispute(
@@ -438,7 +439,7 @@ When the channel lifespan at round n came close to expiration, Bob decided to cl
 	$0xde8456...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underleftarrow{\quad (channelId, 85, 5015, gameData, n) \ \ \ \  \ \  \quad \quad \quad}$
+   $\underleftarrow{\quad (channelId, 85, 5015, gameData, n) \ \ \ \quad }$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -456,7 +457,7 @@ Alice checks the received message and sends the message with data required to cl
 	$0xde8456...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underrightarrow{\quad (channelId, 85, 5015, gameData, n, true, \quad \quad \quad $ \\  $ \quad Alice\_signature ) \quad \quad \quad}$
+   $\underrightarrow{\quad (channelId, 85, 5015, gameData, n, \quad \quad  $ \\  $ \quad  true, Alice\_signature ) \quad \quad \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -474,7 +475,7 @@ Bob, in turn, checks the received data and, upon making sure these data is valid
 	$0x87ff5a...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underrightarrow{\quad (channelId, 85, 5015, gameData, n,  true,\quad \quad \quad $ \\  $ \quad Bob\_signature, Alice\_signature ) \quad}$
+   $\underrightarrow{\quad (channelId, 85, 5015, gameData, n,\quad \quad  $ \\  $ \quad   true, Bob\_signature, \quad  $ \\  $ \quad Alice\_signature ) \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Contract:\\
@@ -497,7 +498,7 @@ Mallory makes a bet of 2 tokens on the red, generates a message and sends it to 
 	$0xca62a232...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underrightarrow{\quad (channelId, 2, 1, gameData,  vg345f) \quad}$
+   $\underrightarrow{\quad (channelId, 2, 1, gameData,  vg345) \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -515,7 +516,7 @@ Bob computes the result for Mallory. It is 20 black, Mallory loses his bet and B
 	$0xca62a232...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underleftarrow{\quad (20, 0x5ааа3c..., channelId, 3, 502, gameData, 1,\quad \quad $ \\  $ \quad Bob\_signature) \quad}$
+   $\underleftarrow{\quad (20, 0x5ааа3c..., channelId, 3, 502,\quad \quad \ \   $ \\  $ \quad gameData, 1, Bob\_signature) \quad}$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
@@ -533,7 +534,7 @@ Unhappy about the result, Mallory tries to send back to Bob a state with forged 
 	$0xca62a232...$\\
    	\end{tabular} &
    \begin{tabular}{c}
-   $\underrightarrow{\quad (channelId, 7, 498, gameData, 1,\quad $\\$ \quad Malory\_signature)\quad  \quad \ \ }$
+   $\underrightarrow{\quad (channelId, 7, 498, gameData, 1,\quad \quad \ $\\$ \quad Malory\_signature)\quad  \quad \ \ }$
    \end{tabular}&
   	 \begin{tabular}{cl}
  	 Bob:\\
