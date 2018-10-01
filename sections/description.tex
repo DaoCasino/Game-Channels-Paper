@@ -24,7 +24,6 @@ gameData & bytes & Game process data\\
 round & uint256 & Round number of the game session \\
 bet & uint256 & Player's bet \\
 seed & bytes32 & Random seed for PRNG\\
-totalBet & uint256 & Total amount of  player bets \\
 flag & bool &Closing flag \\
 maxNumber, minNumber & uint256 & Boundaries of random numbers in the game\\
 \hline
@@ -342,7 +341,7 @@ $party1\_signed\_message = ECDSA.Sign(close\_message)$
 \end{enumerate}
 \end{algorithm}
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \floatname{algorithm}{Protocol}
 \caption{Low balance channel closure} \label{alg:close2}
 \begin{enumerate}
@@ -371,7 +370,7 @@ $party1\_signed\_message = ECDSA.Sign(close\_message)$
     function openDispute(
         channelId,
         round,
-        playerBalance,
+        bet,
         gameData,
         seed,
         player_signed_message
@@ -389,6 +388,16 @@ where $player\_signed\_message = ECDSA.Sign_{pk}(channelId, round, \\ playerBala
 \begin{enumerate}
 	\item After checking data validity, $updateChannel$ compares the number of round where the dispute was open with the number of round in the updated state. If the difference is more than one, the dispute opener loses their deposit.  The channel is closed and removed (see items 6 an 7 for the \autoref{alg:close1} protocol). Otherwise the dispute is removed after the channel update, the channel state reverts back to $Open$. Note that it does not matter which party provides the channel update. \label{upd}
 	\item When $doubleSign$ is called, the smart contract checks whether or not a player sent two different signed messages with the same round number. If so, Player loses all their deposit. The channel is closed and removed (see items 6 and 7 for the  \autoref{alg:close1} protocol). \label{dbl}
+\begin{lstlisting}
+function doubleSign(
+        channelId,
+        round,
+        bet,
+        gameData,
+        seed,
+        player_signed_message
+   )
+\end{lstlisting}
 \end{enumerate}
 	\item After the $t1$ time blocks end the $t2$ time window opens allowing parties to update the channel state or call the  $doubleSign$ function; otherwise Dealer can call the $resolveDispute$ function from the contract. If none of the options is selected for the allocated $t1+t2$ time span, the \autoref{alg:close3} protocol applies. In this case no additional steps follow. \label{block}
 \begin{lstlisting}
@@ -401,6 +410,15 @@ function resolveDispute(
 \end{lstlisting}
 \begin{enumerate}
 	\item  The $resolveDispute$ function checks the dealer RSA public key and verifies the RSA signature $S$. If incorrect, the function call is aborted.
+\end{enumerate}
+\end{enumerate}
+\end{algorithm}
+\begin{algorithm}
+\begin{enumerate}
+	\setcounter{enumi}{5}
+\item[]
+\begin{enumerate}
+\setcounter{enumii}{1}
 	\item The $resolveDispute$ function calls the $runGame(channelId , playerBalance, S)$ function.
 	 \item The $runGame$ function verifies the game logic and withdraws player balances.
 	\item  The channel is closed and removed (see items 6 and 7 for the \autoref{alg:close1} protocol)
