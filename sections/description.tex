@@ -185,7 +185,7 @@ $signed\_seed\_message = ECDSA.Sign_{pk}(seed\_message)$
 \State $S = RSA.Sign(V)$
 \State $S_{hash} = H(S)$
 \State $gameRange = maxNumber -  minNumber + 1$
-\While {$S_{hash} \geq \left\lfloor 2^{hash.size} / gameRange \right\rfloor \cdot gameRange$}
+\While {$S_{hash} \geq \left\lfloor (2^{hash.size}-1) / gameRange \right\rfloor \cdot gameRange$}
 \State$ S_{hash}\gets H(S_{hash})$
 \EndWhile
 \State $L = (S_{hash}$ mod $gameRange) + minNumber$

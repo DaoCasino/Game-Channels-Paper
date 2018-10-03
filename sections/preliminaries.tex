@@ -63,7 +63,7 @@ Define the bit hash length as $hash.size$, and the maximum and the minimum numbe
 \State $\ \ \ \ S \gets  \Sigma . Sign_d(h)$
 \State $\ \ \ \ L \gets H(S) $
 \State $\ \ \ \ range \gets max - min +1$
-\While {$L \geq \left\lfloor 2^{hash.size}-1 / (range)\right\rfloor \cdot (range) $}
+\While {$L \geq \left\lfloor (2^{hash.size}-1) / range\right\rfloor \cdot range $}
 \State$ L \gets H(L)$
 \EndWhile
 \State $ \ \ \ \  L \gets (L \bmod range) + min $
