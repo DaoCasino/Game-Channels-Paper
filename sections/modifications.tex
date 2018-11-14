@@ -1,12 +1,12 @@
 \section{Modifications}
-In this section we introduce some modifications to the basic protocol. First, we are going to cover conversion of our gamechannel to the version without the Dealer role with two equal players. The other modification allows connecting to the channel a third party that will not directly participate in the game but will get published channel states with participant signatures. 
+In this section we introduce some modifications to the basic protocol. First, we will cover conversion of our game channel into a version without the Dealer role, with two equal players. The other modification allows connecting a third party to the channel that will not directly participate in the game, but will receive published channel states with participant signatures. 
 
 \subsection{Two Players Case}
-Some games (e.g., some dice variations) involve two equal players, and a casino takes no part in the process. The original protocol version covered in the \nameref{gamechannel} section can be used for these purposes. But for completeness, we want to suggest a protocol version, based on the  \textit {Threshold Signature Scheme} \cite{bib22}. Obviously, the threshold signature must have the property of uniqueness (e.g. TBLS or TRSA \cite{bib23} signatures).
+Some games (e.g., some dice variations) involve two equal players; a casino takes no part in the process. The original protocol version covered in the \nameref{gamechannel} section can be used for these games. But for completeness, we want to suggest an alternate protocol version based on the  \textit {Threshold Signature Scheme} \cite{bib22}. Obviously, the threshold signature must have the uniqueness property (e.g. TBLS or TRSA \cite{bib23} signatures).
 
-Let’s redeclare the Player role as $Player1$, and the Dealer role as $Player2$. For the two player scenario an altered version of the \autoref{alg:openchannel} protocol is applied to open the channel. The RSA signature is replaced with the selected threshold signature scheme $ \tau $ with the $\tau.PartSign()$ algorithm. This algorithm takes as input a message m and outputs a  participant partial signature of the message. Item 2 is replaced with the DKG protocol that allows each party to have a part of the private key and a shared public key. Just like in the original protocol, the channel state changes to $Open$ when the channel receives two valid participant signatures. 
+Let’s redeclare the Player role as $Player1$, and the Dealer role as $Player2$. For the two player scenario an altered version of the \autoref{alg:openchannel} protocol is applied to open the channel. The RSA signature is replaced with the selected threshold signature scheme: $ \tau $ is replaced by the $\tau.PartSign()$ algorithm. This algorithm takes as input a message $m$ and outputs a partial signature of the message for any participant. Item 2 is replaced with the DKG protocol, which allows each party to have a part of the private key and a shared public key. Just like in the original protocol, the channel state changes to $Open$ when the channel receives two valid participant signatures. 
 
-Once the channel is open, a round involving interaction of two peer parties takes place under the new protocol at the  \pageref{intchannel1} page. Obviously, upon completion of each round each party gets a signed game result and a signed message from the other party with the same data in it. Dispute can be initiated in the case of data discrepancy.
+Once the channel is open, a round involving interaction of two peer parties takes place under the new protocol at the \pageref{intchannel1} page. Obviously, upon completion of a round each party gets a signed game result and a signed message from the other party with the same data in it. Dispute can be initiated in the case of data discrepancy.
 \begin{algorithm} 
 \floatname{algorithm}{Protocol}
 \caption*{\textbf{Protocol 2.1} Messaging in the channel}
@@ -23,11 +23,11 @@ $signed\_seed\_message = ECDSA.Sign(seed\_message)$
 \State $V = H(aggregate\_seed\_message)$
 \State $S =  \tau .PartSign(V)$
  \end{algorithmic}
-\item Then they exchange messages with their respective signature fragments.
+\item They then exchange messages with their respective signature fragments.
 \begin{center}
  $message = (S, round, gameData, player1Balance, player2Balance)$
 \end{center}
-	\item Players verify whether the S number is calculated correctly. If the condition is met, the next step follows.
+	\item Players verify whether the S number is calculated correctly. If this condition is met, the next step follows immediately.
 	\item To compute the game results, the players holding two segments of the signature merge them into a single $aggregate\_S$ that depends on the selected  $\tau$ and on the DKG protocol.
 \begin{algorithmic}
 \State $S_{hash} = H(aggregate\_S)$
@@ -42,7 +42,7 @@ $signed\_seed\_message = ECDSA.Sign(seed\_message)$
 \begin{algorithm}
 \begin{enumerate}
 \setcounter{enumi}{5}
- \item Players exchange obtained game results and verify the data. 
+ \item Players exchange the game results and verify the data. 
 \begin{center}
  $message = (channelId, player1Balance, player2Balance, gameData, round)$
  $signed\_message = ECDSA.Sign(message)$
@@ -51,13 +51,13 @@ $signed\_seed\_message = ECDSA.Sign(seed\_message)$
 \end{enumerate}
 \end{algorithm}
 
-To close a channel, same methods are used as specified in \autoref{closing}. The protocols covered in that section are compatible with this modification with minor alteration. Now bet is considered made once both participants posted their seeds. Also the  $resolveDispute$ and $doubleSign$ functions are available to either participants. (see the \ref{block} item for protocol 6). 
+To close a channel, the same methods are used as specified in \autoref{closing}. The protocols covered in that section are compatible with this modification with a minor alteration. Now bet is considered to be committed once both participants have posted their seeds. Also, the  $resolveDispute$ and $doubleSign$ functions are available to either participant. (see the \ref{block} item for protocol 6). 
 
-Note that our Two players Modification is covered for information purposes only. We recommed using the original version (with additional step for Dealer's bet), as it have same security level, but it is more efficient in terms of speed.
+Note that our two player modification is described for informational purposes only. We recommend using the original version (with the additional step for the Dealer's bet), as it has same security properties, but is more efficient in terms of speed.
 
 \subsection{Third Party Observer}
 
-The above mentioned Pisa \cite{bib9} allows connecting a third watcher to a channel. If one of the actual players happens to get disconnected, the watcher will be able to represent that player before the smart contract. Game channels’ design allows easily applying a similar approach to them and connecting a third participant. To that end, any time participants approve some state, they post it with their respective signatures. The third participant listens to the channel and can then update the smart contract state using these messages. Note that the third participants needs no lock or verification at the game smart contract. 
+Pisa \cite{bib9}, as mentioned above, allows connecting a ``watcher'' to a channel. If one of the actual players happens to get disconnected, the watcher will be able to stand in for that player in interacting with the smart contract. The design of the Game channels allows us to easily apply a similar approach and connect a third participant. To that end, any time participants approve some state, they post it with their respective signatures. The third participant listens to the channel and can then update the smart contract state using these messages. Note that the third participant needs no lock or verification within the smart contract. 
 
-This approach could be useful in a design of a platform where players and dealers meet. In this case a platform can assume responsibility for all contract requests reducing player costs incurred from additional transactions. Yet, the downside of the approach is increased system centralization. Anyway, requests to smart contracts via the platform can be implemented as an optional, not mandatory functionality.
+This approach can be useful in the design of a platform where players and dealers meet. In this case a platform can assume responsibility for all contract requests, reducing player costs incurred from additional transactions. The downside of this approach is increased system centralization. Requests to a smart contract via the platform can be implemented as optional, not mandatory, functionality.
 
