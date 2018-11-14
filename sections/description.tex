@@ -1,7 +1,7 @@
 \section{Game Channels} \label{gamechannel}
-In this section we are going to give a detailed coverage of protocols that allow two parties to open a game channel, play a game, close the channel and get rewards facing no risk of counterparty fraud. Also, we are going to consider the dispute resolution mechanism.
+In this section we give a detailed coverage of protocols that allow two parties to open a game channel, play a game, close the channel and get rewards, without any risk of counterparty fraud. Also, we are going to consider the dispute resolution mechanism.
 
-By $dk$ and $pk$ denote, respectively, Dealer's and Player's ECDSA keys. 
+Let $dk$ and $pk$ denote, respectively, Dealer's and Player's ECDSA keys. 
 
 \begin{table}[h]
 
@@ -31,11 +31,12 @@ maxNumber, minNumber & uint256 & Boundaries of random numbers in the game\\
 \end{table}
 
 \subsection {Opening a channel}
-Player initiates the channel open event. To open a channel, its participants have to agree upon a specific initial state and confirm it with their signatures. Then the transaction with a state and participant signatures is sent to the smart-contract that verifies data validity. The smart-contract calculates a unique channel ID generated according to the following formula:
+A Player initiates the channel open event. To open a channel, its participants have to agree upon a specific initial state and confirm it with their signatures. Then the transaction with the state and participant signatures is sent to the smart contract that verifies the validity of the data. The smart contract creates a unique channel ID generated according to the following formula:
+
 \begin{center}
  $channelId = H(gameContractAddress, playerAddress, dealerAddress, $ \\ $playerBalance, dealerBalance, openingBlock, RSAfingerprint)$.
 \end{center}
- Note that either participant may send the opening transaction. For simplicity, let’s assume that it is sent by Dealer. The message exchange sequence is specified in the  \autoref {alg:openchannel} protocol.
+ Note that either participant may send the opening transaction. For simplicity, let’s assume that it is sent by the Dealer. The message exchange sequence is specified in the  \autoref {alg:openchannel} protocol.
 
 \begin{algorithm}
 \floatname{algorithm}{Protocol}
@@ -84,14 +85,14 @@ $(open\_message,dealer\_signed\_message,player\_signed\_message)$
 \end{lstlisting}
 \begin{enumerate}
 \setcounter{enumi}{5}
-\item The contract verifies validity of the received data. If valid, it is assumed that the both parties approved channel opening. Then the contract generates $channelId$ and freezes funds of the both parties for the game. The channel status changes to $Open$. 
+\item The contract verifies validity of the received data. If valid, it is assumed that the both parties approved opening the channel. Then the contract generates $channelId$ and freezes the funds of the both parties for the game. The channel status changes to $Open$. 
 \end{enumerate}
 \end{algorithm}
 
 \theoremstyle{definition}
 \newtheorem{exmp}{Example}[section]
 \begin{exmp}
-Let’s assume that Bob runs a casino. Alice wants to use Bob’s service to play roulette available in the list of games. First Alice allows the game contract to transfer 100 of Alice's tokens to later use them as a deposit. Then she sends the following message to Bob:
+Let’s assume that Bob runs a casino. Alice wants to use Bob’s service to play roulette, which is available in the list of games. First Alice allows the game contract to transfer 100 of Alice's tokens to later use them as a deposit. Then she sends the following message to Bob:
 \\
 \\
 \begin{tabular}{ccc}
@@ -127,7 +128,7 @@ Bob analyzes the message and agrees to carry out a game. Bob allows the game con
 \end{tabular}\\
 \\
 
-Alice checks the Bob’s message and, making sure it is valid, signs it on her part and sends back.
+Alice checks the Bob’s message and, making sure it is valid, signs it on her part and replies.
 \\\
 \\
 \begin{tabular}{ccc}
@@ -145,7 +146,7 @@ Alice checks the Bob’s message and, making sure it is valid, signs it on her p
 \end{tabular}\\
 \\
 
-Checking Alice’s signature for validity, Bob sends both their signatures to the contract alongside the data about the channel.\\
+After checking Alice’s signature for validity, Bob sends both their signatures to the contract along with the channel data.\\
 \begin{tabular}{ccc}
    	\begin{tabular}{c}
  	 Bob:\\
@@ -161,12 +162,12 @@ Checking Alice’s signature for validity, Bob sends both their signatures to th
 \end{tabular}\\
 \\
 
-The smart contract checks validity of the both signatures and the balances of the participants. Then the contract locks the participant deposits. From this moment the channel is open.
+The smart contract checks the validity of both the signatures and the balances of the participants. Then the contract locks the participant deposits. The channel is now open.
 \end{exmp}
 
 \subsection {Interaction within the channel}
 
-Once the channel is open, the whole gambling process is divided into rounds. In each round a player takes specific game-related decisions (e.g. makes a bet) and sends them to the dealer with a random seed. On the basis of this seed, the dealer then computes the game result. If the player accepts the obtained result as fair, the next round begins. The process of party interaction with a single round is defined by the \autoref{alg:intchannel} protocol. 
+Once the channel is open, the whole gambling process is divided into rounds. In each round a player makes specific game-related decisions (e.g. makes a bet) and sends them to the dealer with a random seed. On the basis of this seed, the dealer then computes the game result. If the player accepts the result as fair, the next round begins. The process of interactiing within a single round is defined by the \autoref{alg:intchannel} protocol. 
 
 \begin{algorithm}
 \floatname{algorithm}{Protocol}
@@ -189,7 +190,7 @@ $signed\_seed\_message = ECDSA.Sign_{pk}(seed\_message)$
 \EndWhile
 \State $L = (S_{hash}$ mod $gameRange) + minNumber$
  \end{algorithmic}
- Applying the game logic to the resulting number, Dealer obtains the round result.
+ Applying the game logic to the resulting value, Dealer obtains the result for the round.
 \item Dealer signs the new channel state
 \begin{center}
 $update\_channel\_message = (channelId, playerBalance, dealerBalance, gameData, round)$
@@ -211,7 +212,7 @@ $dealer\_signed\_message = ECDSA.Sign_{dk}(update\_channel\_message)$
 \begin{center}
  $player\_signed\_message = ECDSA.Sign_{pk}(update\_channel\_message)$
 \end{center}
- \item If the player or the dealer want to update the on-chain state of the game, they call the update channel function of the smart-contract:
+ \item If the player or the dealer want to update the on--chain state of the game, they call the \textit{updateChannel} function of the smart contract:
 \begin{lstlisting}
     function updateChannel(
 	channelId ,
@@ -226,10 +227,10 @@ $dealer\_signed\_message = ECDSA.Sign_{dk}(update\_channel\_message)$
 \end{enumerate}
 \end{algorithm}
 
-Note that, every time a channel state is updated, game-related-data is also recorded to the blockchain. It allows us to maintain necessary game-related statistics and to distribute rewards between the casino and the game developer according to actual bets.
+Note that every time the channel state is updated, game-related-data is also recorded on the blockchain. This allows us to maintain necessary game--related statistics and to distribute rewards between the casino and the game developer according to the actual bets.
 
 \begin{exmp}
-Getting back to the above example, Alice places her bet of 10 tokens on red, generates the relevant message and signs it: 
+Continuing with the example above, Alice places her bet of 10 tokens on red, generates the relevant message and signs it: 
 \\
 \\
 \begin{tabular}{ccc}
@@ -247,7 +248,7 @@ Getting back to the above example, Alice places her bet of 10 tokens on red, gen
 \end{tabular}\\
 \\
 
-Upon the receipt of the Alice’s message, Bob starts computing the round result. To do it, he calculates hash from Alice’s data and signs it via RSA signature. The result is $0x5r43c...$ Then, on the basis of the obtained number, Bob generates a random number that determines the game result. Let’s assume this number is 14. It is on the red. So, Alice wins the round. Bob generates a message for Alice and signs it:
+Upon the receipt of Alice’s message, Bob starts computing the round result. To do it, he calculates the hash from Alice’s data and signs it via a RSA signature. The result is $0x5r43c...$ Then, on the basis of the result obtained, Bob generates a random number that determines the game result. Let’s assume this number is 14. It is on red, so Alice wins the round. Bob generates a message for Alice and signs it:
 $update\_channel\_message = (channelId, playerBalance, dealerBalance, gameData, round)$
 \\
 \\
@@ -284,27 +285,27 @@ Alice approves the received data upon checking it. She signs the message and sen
 \end{tabular}\\
 \\
 
-At the request of either party, the message and both signatures can be sent to the contract to update data stored in it.
+At the request of either party, the message and both signatures can be sent to the contract to update the data stored in it.
 
-Then Bob and Alice exchange messages until either of them decides to close the channel for some reason. 
+Bob and Alice exchange messages until either of them decides to close the channel for some reason. 
 \end{exmp}
 
 \subsection {Closing the channel}
 
-If either party wants to close the channel they initiate the relevant query. There are following reasons for that: \label{closing}
+If either party wants to close the channel they initiate the relevant query. There are following reasons for this: \label{closing}
 \begin{enumerate}
-	\item Player or Dealer voluntary decide to stop gambling. The \autoref{alg:close1} protocol defines the sequence of actions for this scenario.
-	\item Either participant has zero balance/or lacks tokens for the next bet. If either party sends the closure query, and the other accepts it, the \autoref{alg:close1} protocol is applied. Otherwise the \autoref{alg:close2} protocol is used.
-	\item Channel expired. Note that participants have to monitor the channel validity period on their own. Once it is expired, all smart-contract functions become unavailable, except for the $closeBYTime$ function. The \autoref{alg:close3} protocol.
-	\item If either party stops responding messages, the \autoref{alg:close4} protocol is applied.
-	\item  Data forgery by either participant. If an attempt to upload forged data to the channel is detected, the contract returns an error message. Thus invalid data cannot get to blockchain and can only be locally stored by participants.When either player suspects the other of fraud, the \autoref{alg:close4} protocol is applied. Note that for the smart contract this case is similar to the previous one as far as contract logic implementation is concerned.
+	\item Player or Dealer voluntary decides to stop gambling. The \autoref{alg:close1} protocol defines the sequence of actions for this scenario.
+	\item Either participant has zero balance and/or lacks tokens for the next bet. If either party sends the closure query, and the other accepts it, the \autoref{alg:close1} protocol is applied. Otherwise the \autoref{alg:close2} protocol is used.
+	\item The Channel has expired. Note that participants have to monitor the channel validity period on their own. Once it is expired, all smart contract functions become unavailable, except for the $closeBYTime$ function. This is the \autoref{alg:close3} protocol.
+	\item If either party stops responding to messages, the \autoref{alg:close4} protocol is applied.
+	\item  Data forgery by either participant. If an attempt to upload forged data to the channel is detected, the contract returns an error message. Thus, invalid data cannot get to the blockchain, and can only be stored locally by participants. When either player suspects the other of fraud, the \autoref{alg:close4} protocol is applied. Note that for the smart contract this case is similar to the previous one as far as the contract logic is concerned.
 \end{enumerate}
 
 \begin{algorithm}[H]
 \floatname{algorithm}{Protocol}
 \caption{Consented channel close} \label{alg:close1}
 \begin{enumerate}
-	\item A party willing to close channel sends their current round state to the other participant.
+	\item A party willing to close a channel sends their current round state to the other participant.
 \begin{center}
 $message = (channelId, playerBalance, dealerBalance, gameData, round)$
 \end{center} 
@@ -336,7 +337,7 @@ $party1\_signed\_message = ECDSA.Sign(close\_message)$
     )
 \end{lstlisting}
 	\item The contract validates received signatures. Then makes sure that amounts frozen in the contract equal tokens that the player and the dealer intend to withdraw.
-	\item If all the conditions are met, the contract initiates the $closeChannel(channelId)$ function and distributes tokens between parties according to the received data.
+	\item If all the conditions are met, the contract initiates the $closeChannel(channelId)$ function and distributes tokens between parties according to the data received.
 	\item The contract then deletes the channel via the $removeChannel(channelId)$ function. The contract changes the channels status to $Close$.
 \end{enumerate}
 \end{algorithm}
@@ -345,8 +346,8 @@ $party1\_signed\_message = ECDSA.Sign(close\_message)$
 \floatname{algorithm}{Protocol}
 \caption{Low balance channel closure} \label{alg:close2}
 \begin{enumerate}
-	\item The first party makes a request to the smart-contract $updateChannel$ function and sends it the latest signed state indicating that either player has zero token balance/insufficient balance to bet.
-	\item The $updateChannel$ function updates the stored data and simultaneously checks player balances. If zero/insufficient balance is confirmed, the channel is closed and removed (see items 6 and 7 for the \autoref{alg:close1} protocol).
+	\item The first party makes a request to the smart contract $updateChannel$ function and sends it the latest signed state indicating that either player has a zero token balance or insufficient balance to bet.
+	\item The $updateChannel$ function updates the stored data and simultaneously checks player balances. If zero or insufficient balance is confirmed, the channel is closed and removed (see items 6 and 7 for the \autoref{alg:close1} protocol).
 \end{enumerate}
 \end{algorithm}
 
@@ -355,7 +356,7 @@ $party1\_signed\_message = ECDSA.Sign(close\_message)$
 \caption{Expiration closer} \label{alg:close3}
  \begin{enumerate}
 	\item Either party calls the $closeByTime(channelId)$ function. The function checks whether or not a dispute was initiated during its execution.
-	\item If yes, the $closeByDispute(channelId)$ function is executed; it interprets the channel state in favor of Player giving them the highest possible reward provided in the game logic. 
+	\item If yes, the $closeByDispute(channelId)$ function is executed; it interprets the channel state in favor of Player, giving them the highest possible reward provided in the game logic. 
 	\item The channel is closed and removed (see items 6 and 7 for the \autoref{alg:close1} protocol).
 \end{enumerate}
 \end{algorithm}
@@ -365,7 +366,7 @@ $party1\_signed\_message = ECDSA.Sign(close\_message)$
 \caption{Nonresponse/data forgery closery} \label{alg:close4}
 \begin{enumerate}
 	\item A participant uploads the latest approved state to the smart contract via the $updateChannel$ function.
-	\item Then the participant attempts to open a dispute via the following contract function:
+	\item The participant then attempts to open a dispute via the following contract function:
 \begin{lstlisting}
     function openDispute(
         channelId,
@@ -377,8 +378,8 @@ $party1\_signed\_message = ECDSA.Sign(close\_message)$
     )
 \end{lstlisting}
 where $player\_signed\_message = ECDSA.Sign_{pk}(channelId, round, \\ playerBalance, gameData, seed)$.
-	\item The smart contract verifies data received from the participant; if valid, a dispute is open. The channel status changes to $Dispute$.
-	\item  Participants then have $t1$ time blocks to call $updateChannel$ to provide a newer valide state; Another function is  $doubleSign$ (only available to Dealer). The first function is followed by step 4.1 of the protocol, the second is followed by step 4.2.
+	\item The smart contract verifies the data received from the participant; if it is valid, a dispute is opened. The channel status changes to $Dispute$.
+	\item  Participants then have $t1$ time blocks to call $updateChannel$ to provide a newer valid state; there is also another function is  $doubleSign$ (only available to the Dealer). The first function is followed by step 4.1 of the protocol, the second is followed by step 4.2.
 \end{enumerate}
 \end{algorithm}
 \begin{algorithm}
@@ -386,7 +387,7 @@ where $player\_signed\_message = ECDSA.Sign_{pk}(channelId, round, \\ playerBala
 	\setcounter{enumi}{4}
 \item[]
 \begin{enumerate}
-	\item After checking data validity, $updateChannel$ compares the number of round where the dispute was open with the number of round in the updated state. If the difference is more than one, the dispute opener loses their deposit.  The channel is closed and removed (see items 6 an 7 for the \autoref{alg:close1} protocol). Otherwise the dispute is removed after the channel update, the channel state reverts back to $Open$. Note that it does not matter which party provides the channel update. \label{upd}
+	\item After checking the validity of the data, $updateChannel$ compares the round number when the dispute was opened with the round number in the updated state. If the difference is more than one, the dispute opener loses their deposit.  The channel is closed and removed (see items 6 an 7 for the \autoref{alg:close1} protocol). Otherwise the dispute is removed after the channel update, and the channel state reverts back to $Open$. Note that it does not matter which party provides the channel update. \label{upd}
 	\item When $doubleSign$ is called, the smart contract checks whether or not a player sent two different signed messages with the same round number. If so, Player loses all their deposit. The channel is closed and removed (see items 6 and 7 for the  \autoref{alg:close1} protocol). \label{dbl}
 \begin{lstlisting}
 function doubleSign(
@@ -399,7 +400,7 @@ function doubleSign(
    )
 \end{lstlisting}
 \end{enumerate}
-	\item After the $t1$ time blocks end the $t2$ time window opens allowing parties to update the channel state or call the  $doubleSign$ function; otherwise Dealer can call the $resolveDispute$ function from the contract. If none of the options is selected for the allocated $t1+t2$ time span, the \autoref{alg:close3} protocol applies. In this case no additional steps follow. \label{block}
+	\item After $t1$ time blocks the $t2$ time window opens, allowing parties to update the channel state or call the $doubleSign$ function; otherwise Dealer can call the $resolveDispute$ function from the contract. If none of the options is selected for the allocated $t1+t2$ time span, the \autoref{alg:close3} protocol applies. In this case there are no additional steps. \label{block}
 \begin{lstlisting}
 function resolveDispute(
         channelId ,
@@ -427,7 +428,7 @@ function resolveDispute(
 \end{algorithm}
 
 \begin{exmp}
-Getting back to the example, let’s assume that Alice bets 20 tokens in round 5 an sends data to Bob in a message.
+Continuing with the example, let’s assume that Alice bets 20 tokens in round 5 and sends the data to Bob in a message.
 \\
 \\
 \begin{tabular}{ccc}
@@ -445,10 +446,10 @@ Getting back to the example, let’s assume that Alice bets 20 tokens in round 5
 \end{tabular}\\
 \\
 
-But, in this moment Bob has a connection failure and he cannot respond to Alice. Alice gets no response and uploads the last agreed upon state to the channel; then she opens a dispute with a new request. 
-The contract allocates $t1+t2$ time blocks to Bob so that he could upload a newer state to the channel. After $t1 - 1$ blocks pass Bob restores the connection in time to provide a new state with game results via the $updateChannel$ function. The dispute is removed, Alice and Bob go on gambling.
+But, Bob has just had a connection failure and cannot respond to Alice. Alice gets no response and uploads the last agreed upon state to the channel; then she opens a dispute with a new request. 
+The contract allocates $t1+t2$ time blocks to Bob so that he can upload a newer state to the channel. Suppose that after $t1 - 1$ blocks Bob restores the connection in time to provide a new state with game results, via the $updateChannel$ function. The dispute is then removed, and Alice and Bob go on gambling.
 
-When the channel lifespan at round n came close to expiration, Bob decided to close the channel. He requested Alice to ask for her approval to close the channel with the current state.
+When the channel lifespan at round $n$ comes close to expiration, Bob decides to close the channel. He requests Alice's approval to close the channel with the current state.
 \\
 \\
 \begin{tabular}{ccc}
@@ -466,7 +467,7 @@ When the channel lifespan at round n came close to expiration, Bob decided to cl
 \end{tabular}\\
 \\
 
-Alice checks the received message and sends the message with data required to close the game and it's signature to Bob.
+Alice checks the received message and sends a message with the data required to close the game, along with a signature, to Bob.
 \\
 \\
 \begin{tabular}{ccc}
@@ -484,7 +485,7 @@ Alice checks the received message and sends the message with data required to cl
 \end{tabular}\\
 \\
 
-Bob, in turn, checks the received data and, upon making sure these data is valid, signs the data and sends it with both signatures to the contract.
+Bob, in turn, checks the received data and, upon making sure the data is valid, signs the data and sends it with both signatures to the contract.
 \\
 \\
 \begin{tabular}{ccc}
@@ -502,12 +503,12 @@ Bob, in turn, checks the received data and, upon making sure these data is valid
 \end{tabular}\\
 \\
 
-The signature validity condition is met for the both signatures. Therefore, upon checking the received data, the contract closes the channel and removes it.
+Suppose that the signature validity condition is then met for both signatures. Therefore, upon checking the received data, the contract closes the channel and removes it.
 \end{exmp}
 
 \begin{exmp}
-At the same time there is another player gambling with Bob, Mallory, who is a fraudster. There is an open channel between them.
-Mallory makes a bet of 2 tokens on the red, generates a message and sends it to Bob: 
+Suppose that the same time there is another player gambling with Bob, Mallory, who is a fraudster. There is an open channel between them.
+Mallory makes a bet of 2 tokens on red, generates a message and sends it to Bob: 
 \\
 \\
 \begin{tabular}{ccc}
@@ -525,7 +526,7 @@ Mallory makes a bet of 2 tokens on the red, generates a message and sends it to 
 \end{tabular}\\
 \\
 
-Bob computes the result for Mallory. It is 20 black, Mallory loses his bet and Bob sends him the relevant message:
+Bob computes the result for Mallory. It is 20 black; Mallory loses his bet and Bob sends him the relevant message:
 \\
 \\
 \begin{tabular}{ccc}
@@ -543,7 +544,7 @@ Bob computes the result for Mallory. It is 20 black, Mallory loses his bet and B
 \end{tabular}\\
 \\
 
-Unhappy about the result, Mallory tries to send back to Bob a state with forged data where the result favors him. 
+Unhappy with the result, Mallory tries to send back to Bob a state with forged data in which the result favors him. 
 \\
 \\
 \begin{tabular}{ccc}
@@ -561,7 +562,7 @@ Unhappy about the result, Mallory tries to send back to Bob a state with forged 
 \end{tabular}\\
 \\
 
-Upon checking Mallory’s message, Bob detects invalid data, loads the last valid state and initiates a dispute via the $openDispute$ function. The contract allocates $t1 + t2$ time bocks to Mallory to provide a newer state signed by the both parties. Mallory retries to use the forged state uploading it to the channel via the  $updateChannel$ function. The contract checks data, detects invalidity and returns an error. As an outcome, Mallory fails to provide a newer state to the channel within the allocated $t1$ time span. Now Bob launches the $resolveDispute$ function. This function, in turn, makes sure that Bob’s data is valid cals the $runGame$ function that defines the game logic. The $runGame$ function checks the gambling process and concludes that 2 tokens have to be written off Mallory’s account and deposited to the Bob’s one. The channel is then closed and removed. \\
+Upon checking Mallory’s message, Bob detects invalid data, loads the last valid state and initiates a dispute via the $openDispute$ function. The contract allocates $t1 + t2$ time bocks to Mallory to provide a newer state signed by the both parties. Mallory retries the forged state, uploading it to the channel via the  $updateChannel$ function. The contract checks the data, detects that it is invalid and returns an error. As a result, Mallory fails to provide a newer state to the channel within the allocated $t1$ time span. Now Bob launches the $resolveDispute$ function. This function, in turn, makes sure that Bob’s data is valid and calls the $runGame$ function that defines the game logic. The $runGame$ function checks the gambling process and concludes that 2 tokens have to be removed from Mallory’s account and deposited to Bob’s account. The channel is then closed and removed. \\
 \end{exmp}
 
 
