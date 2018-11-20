@@ -1,5 +1,5 @@
 \section{Modifications}
-In this section we introduce some modifications to the basic protocol. First, we will cover conversion of our game channel into a version without the Dealer role, with two equal players. The other modification allows connecting a third party to the channel that will not directly participate in the game, but will receive published channel states with participant signatures. 
+In this section we introduce some modifications to the basic protocol. First, we will cover conversion of the game channel into a version without the Dealer role, with two equal players. The other modification allows connecting a third party to the channel that will not directly participate in the game, but will receive published channel states with participant signatures. 
 
 \subsection{Two Players Case}
 Some games (e.g., some dice variations) involve two equal players; a casino takes no part in the process. The original protocol version covered in the \nameref{gamechannel} section can be used for these games. But for completeness, we want to suggest an alternate protocol version based on the  \textit {Threshold Signature Scheme} \cite{bib22}. Obviously, the threshold signature must have the uniqueness property (e.g. TBLS or TRSA \cite{bib23} signatures).

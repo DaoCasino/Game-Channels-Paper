@@ -42,14 +42,14 @@
 
 	FunFair \cite{bib15} offers a proprietary implementation of state channels called Fate Channels. In particular, it includes a provably fair random numbers generator based on the commit--reveal pattern for seed generation. Magmo \cite{bib16} developed a framework supporting multiplayer channels. Acebuster designed state channels tailored to poker \cite{bib17}. It is noteworthy that all state channel implementations (by Magmo, Fun Fair or DAO.Casino) have limitations in terms of the game types supported.
 
-		\subsection {Our contribution}
+		\subsection {DAO.Casino's solution}
 	For the purposes of this paper all games meeting the following conditions shall be defined as simple pvp--games:
 	\begin{itemize}
 		\item Two parties only (e.g. a casino vs. a player);
 		\item The game logic may require random number generation;
 		\item When either party makes a move, a certain end state can be traced to choose the winner and/or distribute funds among the participants.
 	\end{itemize}
-	We offer a \textit {Game Channel} technology that allows launching blockchain-based simple pvp--games without fees for additional transactions, and with zero delays between moves/rounds. Our solution meets the above--mentioned requirements for state channels.
+	We offer a \textit {Game Channel} technology that allows launching blockchain-based simple pvp--games without fees for additional transactions, and with zero delays between moves/rounds. This solution meets the above--mentioned requirements for state channels.
 
 	Game channels is an instance of state channels tailored to the needs of the gambling industry. Modification of the Signidice \cite{bib18} algorithm is used for provably fair random number generation within a game channel. Signidice generates random numbers from a unique digital signature of one player and a random seed from the other player. It allows a reduction in communication complexity in comparison with the commit--reveal RNG scheme. 
 
